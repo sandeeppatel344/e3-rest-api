@@ -29,3 +29,11 @@ Move it to /usr/local/bin/
 ####mv composer.phar /usr/local/bin/composer
 
 Now you can to use the command composer globally. 
+
+# Installing dependecies
+
+Once composer is installed navigate to app folder and run below command.
+
+```javascript
+```
+composer install

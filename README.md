@@ -2,9 +2,9 @@
 Project for E3 Restful service interface.
 
 # Requirement
-PHP >= 5.6.17
-Composer
-MySQL DB
+* PHP >= 5.6.17
+* Composer
+* MySQL DB
 
 # Installing Composer
 

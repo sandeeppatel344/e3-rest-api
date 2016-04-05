@@ -34,5 +34,6 @@ Now you can to use the command composer globally.
 
 Once composer is installed navigate to app folder and run below command.
 
-```composer install
+```javascript
+composer install
 ```

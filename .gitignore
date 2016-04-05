@@ -1,0 +1,6 @@
+*.log
+*.lock
+code/vendor/
+code/v2se3.sublime-project
+code/v2se3.sublime-workspace
+SQL/~$Service API Details.xlsx

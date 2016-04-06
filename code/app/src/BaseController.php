@@ -59,9 +59,8 @@ class BaseController
 				}
 				else
 				{
-					echo "##ELSE#";
 					$this->insertUpdateToken($db, $userId, 'update', false, $token, true);
-					return $this->generateToken($userId, $db, $expiry, $refresh);
+					throw new \Exception("Session Expired", 4);
 				}
 			}
 			else

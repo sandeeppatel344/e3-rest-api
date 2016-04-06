@@ -37,7 +37,14 @@ class UserAction extends \App\BaseController
 			$retData = $this->$funcToCall($data);
 		}
 
-		return $response->withStatus($retData['code'])->withHeader('Content-Type', 'application/json')->write(json_encode($retData['data']));
+		if (isset($retData['data']))
+		{
+			return $response->withStatus($retData['code'])->withHeader('Content-Type', 'application/json')->write(json_encode($retData['data']));
+		}
+		else
+		{
+			return $response->withStatus($retData['code']);
+		}
 	}
 
 	private function login($data = array())
@@ -139,24 +146,24 @@ class UserAction extends \App\BaseController
 				}
 				else
 				{
-					$retMessage = array("Code" => "APPLICATION_ERROR".$otp, "message" => "Invalid User.", "errors" => array('Username not found/Multiple user found'));
+					$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors" => array('Username not found/Multiple User(s) found'));
 					return array("code" => 422, "data" => $retMessage);
 				}
 			}
 			else
 			{
-				$retMessage = array("Code" => "APPLICATION_ERROR".$otp, "message" => "Invalid User.", "errors" => array('Username not sent'));
+				$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors" => array('Username not sent'));
 				return array("code" => 422, "data" => $retMessage);
 			}
 		}
 		catch (\PDOException $e)
 		{
-			$retMessage = array("Code" => "APPLICATION_ERROR".$otp, "message" => "Invalid User.", "errors" => array($e->getMessage()));
+			$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors" => array($e->getMessage()));
 			return array("code" => 422, "data" => $retMessage);
 		}
 		catch (\Exception $e)
 		{
-			$retMessage = array("Code" => "APPLICATION_ERROR".$otp, "message" => "Invalid User.", "errors" => array($e->getMessage()));
+			$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors" => array($e->getMessage()));
 			return array("code" => 422, "data" => $retMessage);
 		}
 	}
@@ -165,41 +172,59 @@ class UserAction extends \App\BaseController
 	{
 		try
 		{
-			if (isset($data['username']))
+			if (isset($data['username']) && isset($data['otp']) && isset($data['new_password']))
 			{
-				$stmt = $this->dbConn->select()->from('user')->where('username', '=', $data['username']);
+				$stmt = $this->dbConn->select()->from('user')->whereMany(array('username'=> $data['username'], 'password' => $data['otp']), '=');
 				$stmtExec = $stmt->execute();
 				$dataFetched = $stmtExec->fetchAll();
 				if (sizeof($dataFetched) == 1)
 				{
-					$otp = $this->randomString($this->settings['appsets']['otpNumOnly'], $this->settings['appsets']['otpNumChar']);
-					$updateStmt = $this->dbConn->update(array('password' => $otp))->table('user')->where('id', '=', $dataFetched[0]['id']);
+					$updateStmt = $this->dbConn->update(array('password' => $data['new_password']))->table('user')->whereMany(array('id' => $dataFetched[0]['id'], 'username' => $data['username']), '=');
 					$affectRow = $updateStmt->execute();
 					if ($affectRow == 1)
 					{
-						return array("code" => 200, "data" => array('code' => 'success', 'message' => $otp));
+						return array("code" => 200);
 					}
 				}
 				else
 				{
-					$retMessage = array("Code" => "APPLICATION_ERROR".$otp, "message" => "Invalid User.", "errors" => array('Username not found/Multiple user found'));
+					$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors" => array('Username not found/Multiple User(s) found'));
 					return array("code" => 422, "data" => $retMessage);
+				}
+			}
+			elseif (isset($data['current_password']) && isset($data['new_password']))
+			{
+				try
+				{
+					$userStmt = $this->dbConn->select()->from('token')->where('token', '=', $this->userToken[0]);
+					$stmtExec = $userStmt->execute();
+					$dataFetched = $stmtExec->fetch();
+					$updateStmt = $this->dbConn->update(array('password' => $data['new_password']))->table('user')->whereMany(array('id' => $dataFetched['user_id'], 'password' => $data['current_password']), '=');
+					$affectRow = $updateStmt->execute();
+					if ($affectRow == 1)
+					{
+						return array("code" => 200);
+					}
+				}
+				catch (\Exception $e)
+				{
+					throw new \Exception("Error Processing Request".$e->getMessage(), 1);
 				}
 			}
 			else
 			{
-				$retMessage = array("Code" => "APPLICATION_ERROR".$otp, "message" => "Invalid User.", "errors" => array('Username not sent'));
+				$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors" => array('Username not sent'));
 				return array("code" => 422, "data" => $retMessage);
 			}
 		}
 		catch (\PDOException $e)
 		{
-			$retMessage = array("Code" => "APPLICATION_ERROR".$otp, "message" => "Invalid User.", "errors" => array($e->getMessage()));
+			$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors" => array($e->getMessage()));
 			return array("code" => 422, "data" => $retMessage);
 		}
 		catch (\Exception $e)
 		{
-			$retMessage = array("Code" => "APPLICATION_ERROR".$otp, "message" => "Invalid User.", "errors" => array($e->getMessage()));
+			$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors" => array($e->getMessage()));
 			return array("code" => 422, "data" => $retMessage);
 		}
 	}
@@ -221,5 +246,54 @@ class UserAction extends \App\BaseController
 		$otpSend = substr($string_shuffled, 1, $numChar);
 
 		return $otpSend;
+	}
+
+	private function course($data = array())
+	{
+		try
+		{
+			$userStmt = $this->dbConn->select()->from('token')->where('token', '=', $this->userToken[0]);
+			$stmtExec = $userStmt->execute();
+			$dataFetched = $stmtExec->fetch();
+			try
+			{
+				$tokenCheck = $this->checkToken($this->userToken, $dataFetched['user_id'], $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger);
+				if (is_array($tokenCheck) && $tokenCheck[0] == $dataFetched['token'])
+				{
+					$courseStmt = $this->dbConn->select(array('batch.center_course_id AS course_id', 'batch.name AS batch_name', 'batch.status AS batch_status',
+						'batch.start_date AS batch_start_date', 'batch.end_date AS batch_end_date', 'course.name AS course_name', 'batch_user.batch_id AS batch_id', 'batch_user.user_id AS user_id', 'center_course.id AS center_id', 'center.name AS center_name'))->from('batch_user')->join('batch', 'batch_user.batch_id', '=', 'batch.id')->join('center_course', 'batch.center_course_id', '=', 'center_course.id')->join('center', 'center_course.center_id', '=', 'center.id')->join('course', 'center_course.course_id', '=', 'course.id')->where('batch_user.user_id', '=', $dataFetched['user_id']);
+					$courseStmtExec = $courseStmt->execute();
+					$courseData = $courseStmtExec->fetchAll();
+					if (sizeof($courseData) > 0)
+					{
+						return array("code" => 200, "data" => $courseData);
+					}
+					else
+					{
+						return array("code" => 200, "data" => array());
+					}
+				}
+				else
+				{
+					throw new \Exception("Error Processing Request", 1);
+				}
+			}
+			catch (\Exception $e)
+			{
+				throw new \Exception($e->getMessage(), 1);
+			}
+			var_dump($tokenCheck);
+			exit;
+		}
+		catch (\PDOException $e)
+		{
+			$retMessage = array("Code" => "SERVICE_ERROR", "message" => "Invalid token supplied.", "errors" => $e->getMessage());
+			return array("code" => 401, "data" => $retMessage);
+		}
+		catch (\Exception $e)
+		{
+			$retMessage = array("Code" => "SERVICE_ERROR", "message" => "Invalid token supplied.", "errors" => $e->getMessage());
+			return array("code" => 401, "data" => $retMessage);
+		}
 	}
 }

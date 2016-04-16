@@ -39,11 +39,11 @@ class UserAction extends \App\BaseController
 
 		if (isset($retData['data']))
 		{
-			return $response->withStatus($retData['code'])->withHeader('Content-Type', 'application/json')->write(json_encode($retData['data']));
+			return $response->withStatus($retData['code'])->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Content-Type', 'application/json')->write(json_encode($retData['data']));
 		}
 		else
 		{
-			return $response->withStatus($retData['code']);
+			return $response->withStatus($retData['code'])->withHeader('Access-Control-Allow-Origin', '*');
 		}
 	}
 

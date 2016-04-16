@@ -22,7 +22,7 @@ return [
 			'host' => 'localhost',
 			'user' => 'root',
 			'pass' => '',
-			'dbname' => 'e3erp_sit',
+			'dbname' => 'e3erp',
 		],
 		'appsets' => [
 			'tokenExpiry' => 8,

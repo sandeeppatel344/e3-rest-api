@@ -55,3 +55,7 @@ $container[App\Action\UserAction::class] = function ($c) {
 $container[App\Action\BatchAction::class] = function ($c) {
 	return new App\Action\BatchAction($c->get('logger'), $c->get('db'), $c->get('settings'));
 };
+
+$container[App\Action\SessionAction::class] = function ($c) {
+	return new App\Action\SessionAction($c->get('logger'), $c->get('db'), $c->get('settings'));
+};

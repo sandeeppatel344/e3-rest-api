@@ -20,13 +20,16 @@ class BaseController
 		}
 	}
 
-	protected function checkToken($tokens, $userId, $db, $expiry, $refresh, $logger = null)
+	protected function checkToken($tokens, $userId, $db, $expiry, $refresh, $logger = null, $service = null)
 	{
 		$token = $tokens[0];
 		$tokenExpiration = date('Y-m-d H:i:s', strtotime('+'.$expiry.' hour'));
 		$tokenRefresh = date('Y-m-d H:i:s', strtotime('+'.$refresh.' hour'));
 		try
 		{
+            if (($token == null || $token == '') && ($service != 'login')) {
+                throw new \Exception("User not authenticated");
+            }
 			$stmt = $db->select()->from('token')->where('token', '=', $token)->whereMany(array('user_id'=>$userId, 'token'=>$token), '=');
 			$stmtExec = $stmt->execute();
 			$dataFetched = $stmtExec->fetchAll();
@@ -70,7 +73,7 @@ class BaseController
 		}
 		catch (\Exception $e)
 		{
-			throw new \Exception("Error verifying token. ".$e->getMessage(), 2);
+			throw new \Exception("Error verifying token.", 2);
 		}
 	}
 

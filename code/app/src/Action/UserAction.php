@@ -23,7 +23,7 @@ class UserAction extends \App\BaseController
 	public function __invoke(Request $request, Response $response, $args)
 	{
 		$rqHead = $request->getHeaders();
-		$this->userToken = isset($rqHead['HTTP_USER_TOKEN']) ? $rqHead['HTTP_USER_TOKEN'] : false;
+		$this->userToken = isset($rqHead['HTTP_E3_TOKEN']) ? $rqHead['HTTP_E3_TOKEN'] : false;
 		$dataRec = file_get_contents('php://input');
 		$this->logger->info("User action dispatched");
 		$data = json_decode($dataRec, true);
@@ -87,7 +87,7 @@ class UserAction extends \App\BaseController
 				{
 					try
 					{
-						$gToken = $this->checkToken($this->userToken, $dataFetched['id'], $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger);
+						$gToken = $this->checkToken($this->userToken, $dataFetched['id'], $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger, 'login');
 
 						$dataSend['token'] = $gToken[0];
 						$dataSend['role'] = $roleName;
@@ -129,6 +129,7 @@ class UserAction extends \App\BaseController
 	{
 		try
 		{
+            $tokenCheck = $this->checkToken($this->userToken, $dataFetched['user_id'], $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger);
 			if (isset($data['username']))
 			{
 				$stmt = $this->dbConn->select()->from('user')->where('username', '=', $data['username']);
@@ -172,6 +173,7 @@ class UserAction extends \App\BaseController
 	{
 		try
 		{
+            $tokenCheck = $this->checkToken($this->userToken, $dataFetched['user_id'], $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger);
 			if (isset($data['username']) && isset($data['otp']) && isset($data['new_password']))
 			{
 				$stmt = $this->dbConn->select()->from('user')->whereMany(array('username'=> $data['username'], 'password' => $data['otp']), '=');

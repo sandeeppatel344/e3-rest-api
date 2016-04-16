@@ -52,7 +52,7 @@ class BatchAction extends \App\BaseController
 	{
 		try {
 			$gToken = $this->checkToken($this->userToken, $this->getUserId($this->userToken, $this->dbConn), $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger, 'login');
-			$stmt = $this->dbConn->select(array('session.id as id', 'session.name as name', 'session.date as date', 'session.start_time as start_time', 'session.end_time as end_time', 'session.venue as venue', 'session.isactive as is_active', 'session_attendance.is_present as is_attended'))->from('batch_user')->join('session_attendance', 'batch_user.id', '=', 'session_attendance.batch_user_id')->join('session', 'session_attendance.session_id', '=', 'session.id')->where('batch_user.id', '=', $data)->orderBy('session.date', 'ASC')->orderBy('session.start_time', 'ASC');
+			$stmt = $this->dbConn->select(array('session.id as id', 'session.name as name', 'session.date as date', 'session.start_time as start_time', 'session.end_time as end_time', 'session.venue as venue', 'session.isactive as is_active', 'session_attendance.is_present as is_attended'))->from('batch_user')->join('session_attendance', 'batch_user.id', '=', 'session_attendance.batch_user_id')->join('session', 'session_attendance.session_id', '=', 'session.id')->where('batch_user.batch_id', '=', $data)->orderBy('session.date', 'ASC')->orderBy('session.start_time', 'ASC');
 			$stmtExec = $stmt->execute();
 			$dataFetched = $stmtExec->fetchAll();
 			if (sizeof($dataFetched) > 0) {
@@ -94,7 +94,7 @@ class BatchAction extends \App\BaseController
 	{
 		try {
 			$gToken = $this->checkToken($this->userToken, $this->getUserId($this->userToken, $this->dbConn), $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger, 'login');
-			$stmt = $this->dbConn->select(array('Concat(person.first_name, " ", person.last_name) As name', 'person.mobile', 'person.email', 'city_taluka.name As city'))->from('batch_groups')->join('batch_user', 'batch_user.batch_groups_id', '=', 'batch_groups.id')->join('user', 'batch_user.user_id', '=', 'user.id')->join('person', 'person.user_id', '=', 'user.id')->join('user_address_details', 'user_address_details.user_id', '=', 'user.id')->join('city_taluka', 'user_address_details.city_taluka_id', '=', 'city_taluka.id')->where('batch_groups.id', '=', $data);
+			$stmt = $this->dbConn->select(array('Concat(person.first_name, " ", person.last_name) As name', 'person.mobile', 'person.email', 'city_taluka.name As city'))->from('batch_groups')->join('batch_user', 'batch_user.batch_groups_id', '=', 'batch_groups.id')->join('user', 'batch_user.user_id', '=', 'user.id')->join('person', 'person.user_id', '=', 'user.id')->join('user_address_details', 'user_address_details.user_id', '=', 'user.id')->join('city_taluka', 'user_address_details.city_taluka_id', '=', 'city_taluka.id')->where('batch_groups.batch_id', '=', $data);
 			$stmtExec = $stmt->execute();
 			$dataFetched = $stmtExec->fetchAll();
 			if (sizeof($dataFetched) > 0) {

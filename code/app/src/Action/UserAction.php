@@ -129,7 +129,7 @@ class UserAction extends \App\BaseController
 	{
 		try
 		{
-            $tokenCheck = $this->checkToken($this->userToken, $dataFetched['user_id'], $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger);
+            $tokenCheck = $this->checkToken($this->userToken, $this->getUserId($this->userToken, $this->dbConn), $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger);
 			if (isset($data['username']))
 			{
 				$stmt = $this->dbConn->select()->from('user')->where('username', '=', $data['username']);
@@ -173,7 +173,7 @@ class UserAction extends \App\BaseController
 	{
 		try
 		{
-            $tokenCheck = $this->checkToken($this->userToken, $dataFetched['user_id'], $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger);
+            $tokenCheck = $this->checkToken($this->userToken, $this->getUserId($this->userToken, $this->dbConn), $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger);
 			if (isset($data['username']) && isset($data['otp']) && isset($data['new_password']))
 			{
 				$stmt = $this->dbConn->select()->from('user')->whereMany(array('username'=> $data['username'], 'password' => $data['otp']), '=');
@@ -259,7 +259,7 @@ class UserAction extends \App\BaseController
 			$dataFetched = $stmtExec->fetch();
 			try
 			{
-				$tokenCheck = $this->checkToken($this->userToken, $dataFetched['user_id'], $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger);
+				$tokenCheck = $this->checkToken($this->userToken, $this->getUserId($this->userToken, $this->dbConn), $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger);
 				if (is_array($tokenCheck) && $tokenCheck[0] == $dataFetched['token'])
 				{
 					$courseStmt = $this->dbConn->select(array('batch.center_course_id AS course_id', 'batch.name AS batch_name', 'batch.status AS batch_status',

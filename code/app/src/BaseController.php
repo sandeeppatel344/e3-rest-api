@@ -16,7 +16,7 @@ class BaseController
 		}
 		catch (\Exception $e)
 		{
-			throw new \Exception("Error generating token", 1);
+			throw new \Exception("Error generating token" , 1);
 		}
 	}
 
@@ -27,7 +27,7 @@ class BaseController
 		$tokenRefresh = date('Y-m-d H:i:s', strtotime('+'.$refresh.' hour'));
 		try
 		{
-            if (($token == null || $token == '') && ($service != 'login')) {
+            if (($token == null || $token == '') && ($service != 'login' && $service != null)) {
                 throw new \Exception("User not authenticated");
             }
 			$stmt = $db->select()->from('token')->where('token', '=', $token)->whereMany(array('user_id'=>$userId, 'token'=>$token), '=');
@@ -73,7 +73,7 @@ class BaseController
 		}
 		catch (\Exception $e)
 		{
-			throw new \Exception("Error verifying token.", 2);
+			throw new \Exception("Error verifying token. ".$e->getMessage(), 2);
 		}
 	}
 
@@ -140,5 +140,13 @@ class BaseController
 				return true;
 			}
 		}
+	}
+
+	protected function getUserId($token, $db)
+	{
+		$stmt = $db->select()->from('token')->where('token', '=', $token[0]);
+		$stmtExec = $stmt->execute();
+		$dataFetched = $stmtExec->fetch();
+		return $dataFetched['user_id'];
 	}
 }

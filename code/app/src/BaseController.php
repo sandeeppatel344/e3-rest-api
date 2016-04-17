@@ -25,55 +25,63 @@ class BaseController
 		$token = $tokens[0];
 		$tokenExpiration = date('Y-m-d H:i:s', strtotime('+'.$expiry.' hour'));
 		$tokenRefresh = date('Y-m-d H:i:s', strtotime('+'.$refresh.' hour'));
-		try
+
+		if (!is_null($userId))
 		{
-            if (($token == null || $token == '') && ($service != 'login' && $service != null)) {
-                throw new \Exception("User not authenticated");
-            }
-			$stmt = $db->select()->from('token')->where('token', '=', $token)->whereMany(array('user_id'=>$userId, 'token'=>$token), '=');
-			$stmtExec = $stmt->execute();
-			$dataFetched = $stmtExec->fetchAll();
-			if (sizeof($dataFetched) > 0)
+			try
 			{
-				if (!is_null($logger))
+	            if (($token == null || $token == '') && ($service != 'login' && $service != null)) {
+	                throw new \Exception("User not authenticated");
+	            }
+				$stmt = $db->select()->from('token')->where('token', '=', $token)->whereMany(array('user_id'=>$userId, 'token'=>$token), '=');
+				$stmtExec = $stmt->execute();
+				$dataFetched = $stmtExec->fetchAll();
+
+				if (sizeof($dataFetched) > 0)
 				{
-					$this->logger->info(strtotime($dataFetched[0]['expired_by'])." => ".time());
-					$this->logger->info((strtotime($dataFetched[0]['expired_by']) > time()) ? 'True' : 'False');
-					$this->logger->info((strtotime($dataFetched[0]['refresh_by']) > time()) ? 'True' : 'False');
-				}
-				if ((strtotime($dataFetched[0]['expired_by']) > time()) && (strtotime($dataFetched[0]['refresh_by']) > time()))
-				{
-					try
+					if (!is_null($logger))
 					{
-						if ($this->insertUpdateToken($db, $userId, 'update', array($tokenExpiration, $tokenRefresh), $token, false))
+						$this->logger->info(strtotime($dataFetched[0]['expired_by'])." => ".time());
+						$this->logger->info((strtotime($dataFetched[0]['expired_by']) > time()) ? 'True' : 'False');
+						$this->logger->info((strtotime($dataFetched[0]['refresh_by']) > time()) ? 'True' : 'False');
+					}
+					if ((strtotime($dataFetched[0]['expired_by']) > time()) && (strtotime($dataFetched[0]['refresh_by']) > time()))
+					{
+						try
 						{
-							// return true;
-							return array($token, $tokenExpiration, $tokenRefresh);
+							if ($this->insertUpdateToken($db, $userId, 'update', array($tokenExpiration, $tokenRefresh), $token, false))
+							{
+								// return true;
+								return array($token, $tokenExpiration, $tokenRefresh);
+							}
+							else
+							{
+								throw new \Exception("Session Expired", 4);
+							}
 						}
-						else
+						catch (\PDOException $e)
 						{
-							throw new \Exception("Session Expired", 4);
+							throw new \Exception("DB Error ocured.", 5);
 						}
 					}
-					catch (\PDOException $e)
+					else
 					{
-						throw new \Exception("DB Error ocured.", 5);
+						$this->insertUpdateToken($db, $userId, 'update', false, $token, true);
+						throw new \Exception("Session Expired", 4);
 					}
 				}
 				else
 				{
-					$this->insertUpdateToken($db, $userId, 'update', false, $token, true);
-					throw new \Exception("Session Expired", 4);
+					return $this->generateToken($userId, $db, $expiry, $refresh);
 				}
 			}
-			else
+			catch (\Exception $e)
 			{
-				return $this->generateToken($userId, $db, $expiry, $refresh);
+				throw new \Exception("Error verifying token.", 2);
 			}
-		}
-		catch (\Exception $e)
-		{
-			throw new \Exception("Error verifying token. ".$e->getMessage(), 2);
+		} else {
+			// echo "Else";
+			throw new \Exception("Error occured.", 2);
 		}
 	}
 
@@ -147,6 +155,36 @@ class BaseController
 		$stmt = $db->select()->from('token')->where('token', '=', $token[0]);
 		$stmtExec = $stmt->execute();
 		$dataFetched = $stmtExec->fetch();
-		return $dataFetched['user_id'];
+
+		return isset($dataFetched['user_id']) ? $dataFetched['user_id'] : null;
+	}
+
+	protected function randomString($onlyNum = false, $numChar = 4)
+	{
+		$string['smAlpha'] = 'abcdefghijklmnopqrstuvwxyz';
+		$string['lrAlpha'] = 'ABCDEFGHIJKLMNOPQRTSUVWXYZ';
+		$string['numbers'] = '1234567890';
+		if (!$onlyNum)
+		{
+			$finalString = $string['smAlpha']."".$string['numbers']."".$string['lrAlpha'];
+		}
+		else
+		{
+			$finalString = $string['numbers'];
+		}
+		$string_shuffled = str_shuffle($finalString);
+		$otpSend = substr($string_shuffled, 1, $numChar);
+
+		return $otpSend;
+	}
+
+	protected function verifyToken($token, $db, $settings)
+	{
+		try {
+				$gToken = $this->checkToken($token, $this->getUserId($token, $db), $db, $settings['appsets']['tokenExpiry'], $settings['appsets']['tokenRefresh'], $this->logger, 'login');
+		} catch (\Exception $e) {
+			$retMessage = array("Code" => "SERVICE_ERROR", "message" => "Invalid token supplied...", "errors" => array($e->getMessage()));
+				return array("code" => 401, "data" => $retMessage);
+		}
 	}
 }

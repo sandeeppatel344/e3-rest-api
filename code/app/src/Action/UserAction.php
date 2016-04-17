@@ -24,26 +24,58 @@ class UserAction extends \App\BaseController
 	{
 		$rqHead = $request->getHeaders();
 		$this->userToken = isset($rqHead['HTTP_E3_TOKEN']) ? $rqHead['HTTP_E3_TOKEN'] : false;
-		$dataRec = file_get_contents('php://input');
-		$this->logger->info("User action dispatched");
-		$data = json_decode($dataRec, true);
-		if (!isset($args['param1']) || $args['param1'] == "")
-		{
-			$retData = $this->$args['action']($data);
-		}
-		else
-		{
-			$funcToCall = $args['param1']."".ucwords($args['action']);
-			$retData = $this->$funcToCall($data);
-		}
+		
+		if ($args['action'] != 'login'){
+			$useIdChk = $this->verifyToken($this->userToken, $this->dbConn, $this->settings);
+			$this->userId = $this->getUserId($this->userToken, $this->dbConn);
 
-		if (isset($retData['data']))
-		{
-			return $response->withStatus($retData['code'])->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Content-Type', 'application/json')->write(json_encode($retData['data']));
-		}
-		else
-		{
-			return $response->withStatus($retData['code'])->withHeader('Access-Control-Allow-Origin', '*');
+			if (isset($this->userId)) {
+				$dataRec = file_get_contents('php://input');
+				$this->logger->info("Batch action dispatched ".implode(', ',$args));
+				$data = json_decode($dataRec, true);
+				if (!isset($args['param1']) || $args['param1'] == "")
+				{
+					$retData = $this->$args['action']($args['id']);
+				}
+				else
+				{
+					$funcToCall = $args['param1']."".ucwords($args['action']);
+					$retData = $this->$funcToCall($args['id']);
+				}
+	
+				if (isset($retData['data']))
+				{
+					return $response->withStatus($retData['code'])->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Content-Type', 'application/json')->write(json_encode($retData['data']));
+				}
+				else
+				{
+					return $response->withStatus($retData['code'])->withHeader('Access-Control-Allow-Origin', '*');
+				}
+			} else {
+				return $response->withStatus($useIdChk['code'])->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Content-Type', 'application/json')->write(json_encode($useIdChk['data']));
+			}
+		} else {
+			$dataRec = file_get_contents('php://input');
+			$this->logger->info("User action dispatched");
+			$data = json_decode($dataRec, true);
+			if (!isset($args['param1']) || $args['param1'] == "")
+			{
+				$retData = $this->$args['action']($data);
+			}
+			else
+			{
+				$funcToCall = $args['param1']."".ucwords($args['action']);
+				$retData = $this->$funcToCall($data);
+			}
+
+			if (isset($retData['data']))
+			{
+				return $response->withStatus($retData['code'])->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Content-Type', 'application/json')->write(json_encode($retData['data']));
+			}
+			else
+			{
+				return $response->withStatus($retData['code'])->withHeader('Access-Control-Allow-Origin', '*');
+			}
 		}
 	}
 
@@ -231,25 +263,6 @@ class UserAction extends \App\BaseController
 		}
 	}
 
-	protected function randomString($onlyNum = false, $numChar = 4)
-	{
-		$string['smAlpha'] = 'abcdefghijklmnopqrstuvwxyz';
-		$string['lrAlpha'] = 'ABCDEFGHIJKLMNOPQRTSUVWXYZ';
-		$string['numbers'] = '1234567890';
-		if (!$onlyNum)
-		{
-			$finalString = $string['smAlpha']."".$string['numbers']."".$string['lrAlpha'];
-		}
-		else
-		{
-			$finalString = $string['numbers'];
-		}
-		$string_shuffled = str_shuffle($finalString);
-		$otpSend = substr($string_shuffled, 1, $numChar);
-
-		return $otpSend;
-	}
-
 	private function course($data = array())
 	{
 		try
@@ -263,7 +276,7 @@ class UserAction extends \App\BaseController
 				if (is_array($tokenCheck) && $tokenCheck[0] == $dataFetched['token'])
 				{
 					$courseStmt = $this->dbConn->select(array('batch.center_course_id AS course_id', 'batch.name AS batch_name', 'batch.status AS batch_status',
-						'batch.start_date AS batch_start_date', 'batch.end_date AS batch_end_date', 'course.name AS course_name', 'batch_user.batch_id AS batch_id', 'batch_user.user_id AS user_id', 'center_course.id AS center_id', 'center.name AS center_name'))->from('batch_user')->join('batch', 'batch_user.batch_id', '=', 'batch.id')->join('center_course', 'batch.center_course_id', '=', 'center_course.id')->join('center', 'center_course.center_id', '=', 'center.id')->join('course', 'center_course.course_id', '=', 'course.id')->where('batch_user.user_id', '=', $dataFetched['user_id']);
+						'batch.start_date AS batch_start_date', 'batch.end_date AS batch_end_date', 'course.name AS course_name', 'batch_user.batch_id AS batch_id', 'batch_user.user_id AS user_id', 'center_course.id AS center_id', 'center.name AS center_name'))->from('batch_user')->join('batch', 'batch_user.batch_id', '=', 'batch.id')->join('center_course', 'batch.center_course_id', '=', 'center_course.id')->join('center', 'center_course.center_id', '=', 'center.id')->join('course', 'center_course.course_id', '=', 'course.id')->where('batch_user.user_id', '=', $this->userId);
 					$courseStmtExec = $courseStmt->execute();
 					$courseData = $courseStmtExec->fetchAll();
 					if (sizeof($courseData) > 0)
@@ -295,6 +308,32 @@ class UserAction extends \App\BaseController
 		catch (\Exception $e)
 		{
 			$retMessage = array("Code" => "SERVICE_ERROR", "message" => "Invalid token supplied.", "errors" => $e->getMessage());
+			return array("code" => 401, "data" => $retMessage);
+		}
+	}
+
+	private function assignment($data = array())
+	{
+		try {
+			$stmtBaUsId = $this->dbConn->select(array('id'))->from('batch_user')->where('user_id', '=', $this->userId);
+			$stmtBaUsIdExec = $stmtBaUsId->execute();
+			$dataBaUsIdFetched = $stmtBaUsIdExec->fetch();
+
+			$stmt = $this->dbConn->update(array('assignment_status_id' => $data['status_id'], 'user_comment' => $data['user_comment']))->table('user_assignment_status')->whereMany(array('assignment_id' => $data['assignment_id'], 'batch_user_id' => $dataBaUsIdFetched['id']));
+			$stmtAffRow = $stmt->execute();
+
+			if($stmtAffRow == 1){
+				return array("code" => 200);
+			} else {
+				$retMessage = array("Code" => "SERVICE_ERROR", "message" => "Function not allowed.", "errors" => null);
+				return array("code" => 403, "data" => $retMessage);
+				
+			}
+		} catch (\PDOException $e) {
+			$retMessage = array("Code" => "SERVICE_ERROR", "message" => "DB Error.", "errors" => array($e->getMessage()));
+			return array("code" => 422, "data" => $retMessage);
+		} catch (\Exception $e) {
+			$retMessage = array("Code" => "SERVICE_ERROR", "message" => "Invalid token supplied.", "errors" => null);
 			return array("code" => 401, "data" => $retMessage);
 		}
 	}

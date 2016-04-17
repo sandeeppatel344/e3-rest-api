@@ -297,10 +297,14 @@ class UserAction extends \App\BaseController
 			$stmtBaUsIdExec = $stmtBaUsId->execute();
 			$dataBaUsIdFetched = $stmtBaUsIdExec->fetch();
 
-			$stmt = $this->dbConn->update(array('assignment_status_id' => $data['status_id'], 'user_comment' => $data['user_comment']))->table('user_assignment_status')->whereMany(array('assignment_id' => $data['assignment_id'], 'batch_user_id' => $dataBaUsIdFetched['id']));
-			$stmtAffRow = $stmt->execute();
-
-			if($stmtAffRow == 1){
+			if(!is_null($data['prev_status_id'])){
+				$stmt = $this->dbConn->update(array('assignment_status_id' => $data['status_id'], 'user_comment' => $data['user_comment']))->table('user_assignment_status')->whereMany(array('assignment_id' => $data['assignment_id'], 'batch_user_id' => $dataBaUsIdFetched['id'], 'assignment_status_id' => $data['prev_status_id']),'=');
+				$stmtAffRow = $stmt->execute();
+			} else {
+				$stmt = $this->dbConn->insert(array('assignment_id','batch_user_id','assignment_status_id','user_comment'))->into('user_assignment_status')->values($data['assignment_id'], $dataBaUsIdFetched['id'],$data['status_id'], $data['user_comment']);
+				$insId = $stmt->execute();
+			}
+			if($stmtAffRow == 1 || (is_numeric($insId) && $insId > 0) ){
 				return array("code" => 200);
 			} else {
 				$retMessage = array("Code" => "SERVICE_ERROR", "message" => "Function not allowed.", "errors" => null);

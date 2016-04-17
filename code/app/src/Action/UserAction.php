@@ -161,7 +161,6 @@ class UserAction extends \App\BaseController
 	{
 		try
 		{
-            $tokenCheck = $this->checkToken($this->userToken, $this->getUserId($this->userToken, $this->dbConn), $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger);
 			if (isset($data['username']))
 			{
 				$stmt = $this->dbConn->select()->from('user')->where('username', '=', $data['username']);
@@ -205,7 +204,6 @@ class UserAction extends \App\BaseController
 	{
 		try
 		{
-            $tokenCheck = $this->checkToken($this->userToken, $this->getUserId($this->userToken, $this->dbConn), $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger);
 			if (isset($data['username']) && isset($data['otp']) && isset($data['new_password']))
 			{
 				$stmt = $this->dbConn->select()->from('user')->whereMany(array('username'=> $data['username'], 'password' => $data['otp']), '=');
@@ -267,38 +265,18 @@ class UserAction extends \App\BaseController
 	{
 		try
 		{
-			$userStmt = $this->dbConn->select()->from('token')->where('token', '=', $this->userToken[0]);
-			$stmtExec = $userStmt->execute();
-			$dataFetched = $stmtExec->fetch();
-			try
+			$courseStmt = $this->dbConn->select(array('batch.center_course_id AS course_id', 'batch.name AS batch_name', 'batch.status AS batch_status',
+				'batch.start_date AS batch_start_date', 'batch.end_date AS batch_end_date', 'course.name AS course_name', 'batch_user.batch_id AS batch_id', 'batch_user.user_id AS user_id', 'center_course.id AS center_id', 'center.name AS center_name'))->from('batch_user')->join('batch', 'batch_user.batch_id', '=', 'batch.id')->join('center_course', 'batch.center_course_id', '=', 'center_course.id')->join('center', 'center_course.center_id', '=', 'center.id')->join('course', 'center_course.course_id', '=', 'course.id')->where('batch_user.user_id', '=', $this->userId);
+			$courseStmtExec = $courseStmt->execute();
+			$courseData = $courseStmtExec->fetchAll();
+			if (sizeof($courseData) > 0)
 			{
-				$tokenCheck = $this->checkToken($this->userToken, $this->getUserId($this->userToken, $this->dbConn), $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger);
-				if (is_array($tokenCheck) && $tokenCheck[0] == $dataFetched['token'])
-				{
-					$courseStmt = $this->dbConn->select(array('batch.center_course_id AS course_id', 'batch.name AS batch_name', 'batch.status AS batch_status',
-						'batch.start_date AS batch_start_date', 'batch.end_date AS batch_end_date', 'course.name AS course_name', 'batch_user.batch_id AS batch_id', 'batch_user.user_id AS user_id', 'center_course.id AS center_id', 'center.name AS center_name'))->from('batch_user')->join('batch', 'batch_user.batch_id', '=', 'batch.id')->join('center_course', 'batch.center_course_id', '=', 'center_course.id')->join('center', 'center_course.center_id', '=', 'center.id')->join('course', 'center_course.course_id', '=', 'course.id')->where('batch_user.user_id', '=', $this->userId);
-					$courseStmtExec = $courseStmt->execute();
-					$courseData = $courseStmtExec->fetchAll();
-					if (sizeof($courseData) > 0)
-					{
-						return array("code" => 200, "data" => $courseData);
-					}
-					else
-					{
-						return array("code" => 200, "data" => array());
-					}
-				}
-				else
-				{
-					throw new \Exception("Error Processing Request", 1);
-				}
+				return array("code" => 200, "data" => $courseData);
 			}
-			catch (\Exception $e)
+			else
 			{
-				throw new \Exception($e->getMessage(), 1);
+				return array("code" => 200, "data" => array());
 			}
-			var_dump($tokenCheck);
-			exit;
 		}
 		catch (\PDOException $e)
 		{

@@ -169,9 +169,11 @@ class UserAction extends \App\BaseController
 				if (sizeof($dataFetched) == 1)
 				{
 					$otp = $this->randomString($this->settings['appsets']['otpNumOnly'], $this->settings['appsets']['otpNumChar']);
-					$updateStmt = $this->dbConn->update(array('password' => $otp))->table('user')->where('id', '=', $dataFetched[0]['id']);
-					$affectRow = $updateStmt->execute();
-					if ($affectRow == 1)
+					/*$updateStmt = $this->dbConn->update(array('password' => $otp))->table('user')->where('id', '=', $dataFetched[0]['id']);
+					$affectRow = $updateStmt->execute();*/
+					$stmt = $this->dbConn->insert(array('username', 'otp', 'created_date', 'expire_on', 'active'))->into('forgot_password_otp')->values($data['username'], $otp, 'now()', 'DATE_ADD(NOW(), INTERVAL 1 HOUR)', 'Y');
+					$insId = $stmt->execute();
+					if ($insId > 1)
 					{
 						return array("code" => 200, "data" => array('code' => 'success', 'message' => $otp));
 					}
@@ -206,21 +208,29 @@ class UserAction extends \App\BaseController
 		{
 			if (isset($data['username']) && isset($data['otp']) && isset($data['new_password']))
 			{
-				$stmt = $this->dbConn->select()->from('user')->whereMany(array('username'=> $data['username'], 'password' => $data['otp']), '=');
-				$stmtExec = $stmt->execute();
-				$dataFetched = $stmtExec->fetchAll();
-				if (sizeof($dataFetched) == 1)
-				{
+				$stmtOtp = $this->dbConn->select()->from('forgot_password_otp')->whereMany(array('username' => $data['username'], 'otp' => $data['otp'], 'active' => 'Y'), '=')->where('expire_on' , '<=', 'now()');
+				$stmtOtpExec = $stmtOtp->execute();
+				$stmtOtpData = $stmtOtpExec->fetch();
+
+				if (sizeof('stmtOtpData') > 0) {
 					$updateStmt = $this->dbConn->update(array('password' => $data['new_password']))->table('user')->whereMany(array('id' => $dataFetched[0]['id'], 'username' => $data['username']), '=');
 					$affectRow = $updateStmt->execute();
 					if ($affectRow == 1)
 					{
+						$otpUp = $this->dbConn->update(array('active' => 'N'))->table('forgot_password_otp')->whereMany(array('username' => $data['username'], 'otp' => $data['otp'], 'active' => 'Y'), '=');
+						$otpAffR = $otpUp->execute();
 						return array("code" => 200);
+					}
+					else
+					{
+						$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors" => array('Username not found/Multiple User(s) found'));
+						return array("code" => 422, "data" => $retMessage);
 					}
 				}
 				else
 				{
-					$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors" => array('Username not found/Multiple User(s) found'));
+
+					$retMessage = array("Code" => "SERVICE_ERROR", "message" => "OTP Expired.", "errors" => array('OTP Expired please generate new.'));
 					return array("code" => 422, "data" => $retMessage);
 				}
 			}

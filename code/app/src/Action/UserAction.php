@@ -25,7 +25,7 @@ class UserAction extends \App\BaseController
 		$rqHead = $request->getHeaders();
 		$this->userToken = isset($rqHead['HTTP_E3_TOKEN']) ? $rqHead['HTTP_E3_TOKEN'] : false;
 		
-		if ($args['action'] != 'login'){
+		if ($args['action'] != 'login' || $args['action'] != 'generateOTP'){
 			$useIdChk = $this->verifyToken($this->userToken, $this->dbConn, $this->settings);
 			$this->userId = $this->getUserId($this->userToken, $this->dbConn);
 

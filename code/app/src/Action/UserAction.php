@@ -35,12 +35,12 @@ class UserAction extends \App\BaseController
 				$data = json_decode($dataRec, true);
 				if (!isset($args['param1']) || $args['param1'] == "")
 				{
-					$retData = $this->$args['action']($args['id']);
+					$retData = $this->$args['action']($data);
 				}
 				else
 				{
 					$funcToCall = $args['param1']."".ucwords($args['action']);
-					$retData = $this->$funcToCall($args['id']);
+					$retData = $this->$funcToCall($data);
 				}
 	
 				if (isset($retData['data']))

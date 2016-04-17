@@ -26,6 +26,9 @@ class BatchAction extends \App\BaseController
 	{
 		$rqHead = $request->getHeaders();
 		$this->userToken = isset($rqHead['HTTP_E3_TOKEN']) ? $rqHead['HTTP_E3_TOKEN'] : false;
+		
+		$useIdChk = $this->verifyToken($this->userToken, $this->dbConn, $this->settings);
+		$this->userId = $this->getUserId($this->userToken, $this->dbConn);
 
 		if (isset($this->userId)) {
 				$dataRec = file_get_contents('php://input');

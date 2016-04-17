@@ -81,7 +81,6 @@ class SessionAction extends \App\BaseController
 
 	private function media($data = null)
 	{
-		$gToken = $this->checkToken($this->userToken, $this->getUserId($this->userToken, $this->dbConn), $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger, 'login');
 		if (!is_null($data)) {
 			try {
 				$stmt = $this->dbConn->select(array('url', 'type'))->from('session_media')->where('session_id', '=', $data);
@@ -104,7 +103,6 @@ class SessionAction extends \App\BaseController
 
 	private function distinction($data = null)
 	{
-		$gToken = $this->checkToken($this->userToken, $this->getUserId($this->userToken, $this->dbConn), $this->dbConn, $this->settings['appsets']['tokenExpiry'], $this->settings['appsets']['tokenRefresh'], $this->logger, 'login');
 		if (!is_null($data)) {
 			try {
 				$stmt = $this->dbConn->select(array('name', 'description'))->from('session_distinction')->where('session_id', '=', $data);

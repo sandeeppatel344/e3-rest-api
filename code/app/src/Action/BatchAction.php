@@ -8,7 +8,7 @@ use \Psr\Http\Message\ResponseInterface as Response;
 
 class BatchAction extends \App\BaseController
 {
-    
+
 	public $logger;
 	private $dbConn;
 	private $settings;
@@ -30,48 +30,59 @@ class BatchAction extends \App\BaseController
 		$useIdChk = $this->verifyToken($this->userToken, $this->dbConn, $this->settings);
 		$this->userId = $this->getUserId($this->userToken, $this->dbConn);
 
-		if (isset($this->userId)) {
+		if (isset($this->userId))
+		{
 				$dataRec = file_get_contents('php://input');
-				$this->logger->info("Batch action dispatched ".implode(', ',$args));
+				$this->logger->info("Batch action dispatched ".implode(', ', $args));
 				$data = json_decode($dataRec, true);
-				if (!isset($args['param1']) || $args['param1'] == "")
+			if (!isset($args['param1']) || $args['param1'] == "")
 				{
-					$retData = $this->$args['action']($args['id']);
-				}
-				else
-				{
-					$funcToCall = $args['param1']."".ucwords($args['action']);
-					$retData = $this->$funcToCall($args['id']);
-				}
-	
-				if (isset($retData['data']))
-				{
-					return $response->withStatus($retData['code'])->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Content-Type', 'application/json')->write(json_encode($retData['data']));
-				}
-				else
-				{
-					return $response->withStatus($retData['code'])->withHeader('Access-Control-Allow-Origin', '*');
-				}
-			} else {
-				return $response->withStatus($useIdChk['code'])->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Content-Type', 'application/json')->write(json_encode($useIdChk['data']));
+				$retData = $this->$args['action']($args['id']);
 			}
+			else
+				{
+				$funcToCall = $args['param1']."".ucwords($args['action']);
+				$retData = $this->$funcToCall($args['id']);
+			}
+
+			if (isset($retData['data']))
+				{
+				return $response->withStatus($retData['code'])->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Content-Type', 'application/json')->write(json_encode($retData['data']));
+			}
+			else
+				{
+				return $response->withStatus($retData['code'])->withHeader('Access-Control-Allow-Origin', '*');
+			}
+		}
+		else
+		{
+			return $response->withStatus($useIdChk['code'])->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Content-Type', 'application/json')->write(json_encode($useIdChk['data']));
+		}
 	}
 
 	private function session($data = null)
 	{
-		try {
-			$stmt = $this->dbConn->select(array('session.id as id', 'session.name as name', 'session.date as date', 'session.start_time as start_time', 'session.end_time as end_time', 'session.venue as venue', 'session.isactive as is_active', 'session_attendance.is_present as is_attended'))->from('batch_user')->join('session_attendance', 'batch_user.id', '=', 'session_attendance.batch_user_id')->join('session', 'session_attendance.session_id', '=', 'session.id')->whereMany(array('batch_user.batch_id' => $data, 'batch_user.user_id' => $this->userId), '=')->orderBy('session.date', 'ASC')->orderBy('session.start_time', 'ASC');
+		try
+		{
+			$stmt = $this->dbConn->select(array('session.id as id', 'session.name as name', 'session.date as date', 'session.start_time as start_time', 'session.end_time as end_time', 'session.venue as venue', 'session.isactive as is_active', 'IFNULL((select is_present from session_attendance where batch_user_id = batch_user.id), "N") as is_attended'))->distinct()->from('session')->join('batch', 'session.batch_id', '=', 'batch.id')->join('batch_user', 'batch_user.batch_id', '=', 'batch.id')->whereMany(array('batch.id' => $data, 'batch_user.user_id' => $this->userId), '=')->orderBy('session.date', 'ASC')->orderBy('session.start_time', 'ASC');
 			$stmtExec = $stmt->execute();
 			$dataFetched = $stmtExec->fetchAll();
-			if (sizeof($dataFetched) > 0) {
+			if (sizeof($dataFetched) > 0)
+			{
 				return array("code" => 200, "data" => $dataFetched);
-			} else {
+			}
+			else
+			{
 				return array("code" => 200, "data" => array());
 			}
-		} catch (\PDOException $e) {
+		}
+		catch (\PDOException $e)
+		{
 			$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "DB failed.", "errors" => array($e->getMessage()));
 			return array("code" => 422, "data" => $retMessage);
-		} catch (\Exception $e) {
+		}
+		catch (\Exception $e)
+		{
 			$retMessage = array("Code" => "SERVICE_ERROR", "message" => "Invalid token supplied...", "errors" => array($e->getMessage()));
 			return array("code" => 401, "data" => $retMessage);
 		}
@@ -79,19 +90,27 @@ class BatchAction extends \App\BaseController
 
 	private function meeting($data = null)
 	{
-		try {
+		try
+		{
 			$stmt = $this->dbConn->select(array('batch_groups.name', 'meeting.title', 'meeting.agenda', 'meeting.venue', 'meeting.batch_groups_id', 'meeting.conference_number', 'meeting.conference_other_details', 'meeting.date', 'meeting.start_time', 'meeting.end_time'))->from('meeting')->join('batch_groups', 'meeting.batch_groups_id', '=', 'e3erp.batch_groups.id')->where('meeting.batch_id', '=', $data)->orderBy('meeting.date', 'ASC')->orderBy('meeting.start_time', 'ASC');
 			$stmtExec = $stmt->execute();
 			$dataFetched = $stmtExec->fetchAll();
-			if (sizeof($dataFetched) > 0) {
+			if (sizeof($dataFetched) > 0)
+			{
 				return array("code" => 200, "data" => $dataFetched);
-			} else {
+			}
+			else
+			{
 				return array("code" => 200, "data" => array());
 			}
-		} catch (\PDOException $e) {
+		}
+		catch (\PDOException $e)
+		{
 			$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "DB failed.", "errors" => array($e->getMessage()));
 			return array("code" => 422, "data" => $retMessage);
-		} catch (\Exception $e) {
+		}
+		catch (\Exception $e)
+		{
 			$retMessage = array("Code" => "SERVICE_ERROR", "message" => "Invalid token supplied...", "errors" => array($e->getMessage()));
 			return array("code" => 401, "data" => $retMessage);
 		}
@@ -99,19 +118,27 @@ class BatchAction extends \App\BaseController
 
 	private function memberGroup($data = null)
 	{
-		try {
+		try
+		{
 			$stmt = $this->dbConn->select(array('Concat(person.first_name, " ", person.last_name) As name', 'person.mobile', 'person.email', 'city_taluka.name As city'))->from('batch_groups')->join('batch_user', 'batch_user.batch_groups_id', '=', 'batch_groups.id')->join('user', 'batch_user.user_id', '=', 'user.id')->join('person', 'person.user_id', '=', 'user.id')->join('user_address_details', 'user_address_details.user_id', '=', 'user.id')->join('city_taluka', 'user_address_details.city_taluka_id', '=', 'city_taluka.id')->whereMany(array('batch_groups.batch_id' => $data, 'batch_user.user_id' => $this->userId), '=');
 			$stmtExec = $stmt->execute();
 			$dataFetched = $stmtExec->fetchAll();
-			if (sizeof($dataFetched) > 0) {
+			if (sizeof($dataFetched) > 0)
+			{
 				return array("code" => 200, "data" => $dataFetched);
-			} else {
+			}
+			else
+			{
 				return array("code" => 200, "data" => array());
 			}
-		} catch (\PDOException $e) {
+		}
+		catch (\PDOException $e)
+		{
 			$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "DB failed.", "errors" => array($e->getMessage()));
 			return array("code" => 422, "data" => $retMessage);
-		} catch (\Exception $e) {
+		}
+		catch (\Exception $e)
+		{
 			$retMessage = array("Code" => "SERVICE_ERROR", "message" => "Invalid token supplied...", "errors" => array($e->getMessage()));
 			return array("code" => 401, "data" => $retMessage);
 		}

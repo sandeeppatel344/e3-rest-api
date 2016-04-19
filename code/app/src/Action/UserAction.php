@@ -24,14 +24,16 @@ class UserAction extends \App\BaseController
 	{
 		$rqHead = $request->getHeaders();
 		$this->userToken = isset($rqHead['HTTP_E3_TOKEN']) ? $rqHead['HTTP_E3_TOKEN'] : false;
-		
-		if ($args['action'] != 'login' && $args['action'] != 'otp'){
+
+		if ($args['action'] != 'login' && $args['action'] != 'otp')
+		{
 			$useIdChk = $this->verifyToken($this->userToken, $this->dbConn, $this->settings);
 			$this->userId = $this->getUserId($this->userToken, $this->dbConn);
 
-			if (isset($this->userId)) {
+			if (isset($this->userId))
+			{
 				$dataRec = file_get_contents('php://input');
-				$this->logger->info("Batch action dispatched ".implode(', ',$args));
+				$this->logger->info("Batch action dispatched ".implode(', ', $args));
 				$data = json_decode($dataRec, true);
 				if (!isset($args['param1']) || $args['param1'] == "")
 				{
@@ -42,7 +44,7 @@ class UserAction extends \App\BaseController
 					$funcToCall = $args['param1']."".ucwords($args['action']);
 					$retData = $this->$funcToCall($data);
 				}
-	
+
 				if (isset($retData['data']))
 				{
 					return $response->withStatus($retData['code'])->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Content-Type', 'application/json')->write(json_encode($retData['data']));
@@ -51,10 +53,14 @@ class UserAction extends \App\BaseController
 				{
 					return $response->withStatus($retData['code'])->withHeader('Access-Control-Allow-Origin', '*');
 				}
-			} else {
+			}
+			else
+			{
 				return $response->withStatus($useIdChk['code'])->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Content-Type', 'application/json')->write(json_encode($useIdChk['data']));
 			}
-		} else {
+		}
+		else
+		{
 			$dataRec = file_get_contents('php://input');
 			$this->logger->info("User action dispatched");
 			$data = json_decode($dataRec, true);
@@ -171,7 +177,7 @@ class UserAction extends \App\BaseController
 					$otp = $this->randomString($this->settings['appsets']['otpNumOnly'], $this->settings['appsets']['otpNumChar']);
 					/*$updateStmt = $this->dbConn->update(array('password' => $otp))->table('user')->where('id', '=', $dataFetched[0]['id']);
 					$affectRow = $updateStmt->execute();*/
-					$stmt = $this->dbConn->insert(array('username', 'otp', 'created_date', 'expire_on', 'active'))->into('forgot_password_otp')->values($data['username'], $otp, 'now()', 'DATE_ADD(NOW(), INTERVAL 1 HOUR)', 'Y');
+					$stmt = $this->dbConn->insert(array('username', 'otp', 'created_date', 'expire_on', 'active'))->into('forgot_password_otp')->values(array($data['username'], $otp, 'now()', 'DATE_ADD(NOW(), INTERVAL 1 HOUR)', 'Y'));
 					$insId = $stmt->execute();
 					if ($insId > 1)
 					{
@@ -208,11 +214,12 @@ class UserAction extends \App\BaseController
 		{
 			if (isset($data['username']) && isset($data['otp']) && isset($data['new_password']))
 			{
-				$stmtOtp = $this->dbConn->select()->from('forgot_password_otp')->whereMany(array('username' => $data['username'], 'otp' => $data['otp'], 'active' => 'Y'), '=')->where('expire_on' , '<=', 'now()');
+				$stmtOtp = $this->dbConn->select()->from('forgot_password_otp')->whereMany(array('username' => $data['username'], 'otp' => $data['otp'], 'active' => 'Y'), '=')->where('expire_on', '<=', 'now()');
 				$stmtOtpExec = $stmtOtp->execute();
 				$stmtOtpData = $stmtOtpExec->fetch();
 
-				if (sizeof('stmtOtpData') > 0) {
+				if (sizeof('stmtOtpData') > 0)
+				{
 					$updateStmt = $this->dbConn->update(array('password' => $data['new_password']))->table('user')->whereMany(array('id' => $dataFetched[0]['id'], 'username' => $data['username']), '=');
 					$affectRow = $updateStmt->execute();
 					if ($affectRow == 1)
@@ -229,7 +236,6 @@ class UserAction extends \App\BaseController
 				}
 				else
 				{
-
 					$retMessage = array("Code" => "SERVICE_ERROR", "message" => "OTP Expired.", "errors" => array('OTP Expired please generate new.'));
 					return array("code" => 422, "data" => $retMessage);
 				}
@@ -302,29 +308,39 @@ class UserAction extends \App\BaseController
 
 	private function assignment($data = array())
 	{
-		try {
+		try
+		{
 			$stmtBaUsId = $this->dbConn->select(array('id'))->from('batch_user')->where('user_id', '=', $this->userId);
 			$stmtBaUsIdExec = $stmtBaUsId->execute();
 			$dataBaUsIdFetched = $stmtBaUsIdExec->fetch();
 
-			if(!is_null($data['prev_status_id'])){
-				$stmt = $this->dbConn->update(array('assignment_status_id' => $data['status_id'], 'user_comment' => $data['user_comment']))->table('user_assignment_status')->whereMany(array('assignment_id' => $data['assignment_id'], 'batch_user_id' => $dataBaUsIdFetched['id'], 'assignment_status_id' => $data['prev_status_id']),'=');
+			if (!is_null($data['prev_status_id']))
+			{
+				$stmt = $this->dbConn->update(array('assignment_status_id' => $data['status_id'], 'user_comment' => $data['user_comment']))->table('user_assignment_status')->whereMany(array('assignment_id' => $data['assignment_id'], 'batch_user_id' => $dataBaUsIdFetched['id'], 'assignment_status_id' => $data['prev_status_id']), '=');
 				$stmtAffRow = $stmt->execute();
-			} else {
-				$stmt = $this->dbConn->insert(array('assignment_id','batch_user_id','assignment_status_id','user_comment'))->into('user_assignment_status')->values($data['assignment_id'], $dataBaUsIdFetched['id'],$data['status_id'], $data['user_comment']);
+			}
+			else
+			{
+				$stmt = $this->dbConn->insert(array('assignment_id','batch_user_id','assignment_status_id','user_comment'))->into('user_assignment_status')->values($data['assignment_id'], $dataBaUsIdFetched['id'], $data['status_id'], $data['user_comment']);
 				$insId = $stmt->execute();
 			}
-			if($stmtAffRow == 1 || (is_numeric($insId) && $insId > 0) ){
+			if ($stmtAffRow == 1 || (is_numeric($insId) && $insId > 0) )
+			{
 				return array("code" => 200);
-			} else {
+			}
+			else
+			{
 				$retMessage = array("Code" => "SERVICE_ERROR", "message" => "Function not allowed.", "errors" => null);
 				return array("code" => 403, "data" => $retMessage);
-				
 			}
-		} catch (\PDOException $e) {
+		}
+		catch (\PDOException $e)
+		{
 			$retMessage = array("Code" => "SERVICE_ERROR", "message" => "DB Error.", "errors" => array($e->getMessage()));
 			return array("code" => 422, "data" => $retMessage);
-		} catch (\Exception $e) {
+		}
+		catch (\Exception $e)
+		{
 			$retMessage = array("Code" => "SERVICE_ERROR", "message" => "Invalid token supplied.", "errors" => null);
 			return array("code" => 401, "data" => $retMessage);
 		}

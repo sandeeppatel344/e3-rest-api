@@ -121,9 +121,26 @@ class BatchAction extends \App\BaseController
 	{
 		try
 		{
-			$stmt = $this->dbConn->select(array('Concat(person.first_name, " ", person.last_name) As name', 'person.mobile', 'person.email', 'city_taluka.name As city'))->from('batch_groups')->join('batch_user', 'batch_user.batch_groups_id', '=', 'batch_groups.id')->join('user', 'batch_user.user_id', '=', 'user.id')->join('person', 'person.user_id', '=', 'user.id')->join('user_address_details', 'user_address_details.user_id', '=', 'user.id')->join('city_taluka', 'user_address_details.city_taluka_id', '=', 'city_taluka.id')->whereMany(array('batch_groups.batch_id' => $data), '=');
-			$stmtExec = $stmt->execute();
-			$dataFetched = $stmtExec->fetchAll();
+			$st=$this->dbConn->select(array("batch_groups_id"))->from('batch_user')->where('user_id', '=', $this->userId)->execute()->fetch();
+			$st['batch_groups_id'] = (!is_null($st['batch_groups_id'])) ? $st['batch_groups_id'] : "" ;
+			
+			$st2=$this->dbConn->select(array('user_id'))->from('batch_user')->where('batch_groups_id', '=', $st['batch_groups_id'])->execute()->fetchAll();
+			$gUser = array();
+
+			for ($i=0; $i < sizeof($st2);$i++)
+			{
+				array_push($gUser, $st2[$i]['user_id']);
+			}
+			if(sizeof($gUser) > 0)
+			{
+				$stmt = $this->dbConn->select(array('Concat(person.first_name, " ", person.last_name) As name', 'person.mobile', 'person.email', 'city_taluka.name As city'))->from('user')->join('person', 'person.user_id', '=', 'user.id')->join('user_address_details', 'user_address_details.user_id', '=', 'user.id')->join('city_taluka', 'user_address_details.city_taluka_id', '=', 'city_taluka.id')->whereIn('user.id', $gUser);
+				$stmtExec = $stmt->execute();
+				$dataFetched = $stmtExec->fetchAll();
+			}
+			else
+			{
+				$dataFetched = array();
+			}
 			if (sizeof($dataFetched) > 0)
 			{
 				return array("code" => 200, "data" => $dataFetched);

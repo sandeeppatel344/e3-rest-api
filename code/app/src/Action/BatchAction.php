@@ -36,8 +36,9 @@ class BatchAction extends \App\BaseController
 				$this->logger->info("Batch action dispatched ".implode(', ', $args));
 				$data = json_decode($dataRec, true);
 			if (!isset($args['param1']) || $args['param1'] == "")
-				{
-				$retData = $this->$args['action']($args['id']);
+			{
+				$funcToCall = $args['action'];
+				$retData = $this->$funcToCall($args['id']);
 			}
 			else
 				{
@@ -64,7 +65,7 @@ class BatchAction extends \App\BaseController
 	{
 		try
 		{
-			$stmt = $this->dbConn->select(array('session.id as id', 'session.name as name', 'session.date as date', 'session.start_time as start_time', 'session.end_time as end_time', 'session.venue as venue', 'session.isactive as is_active', 'IFNULL((select is_present from session_attendance where batch_user_id = batch_user.id), "N") as is_attended'))->distinct()->from('session')->join('batch', 'session.batch_id', '=', 'batch.id')->join('batch_user', 'batch_user.batch_id', '=', 'batch.id')->whereMany(array('batch.id' => $data, 'batch_user.user_id' => $this->userId), '=')->orderBy('session.date', 'ASC')->orderBy('session.start_time', 'ASC');
+			$stmt = $this->dbConn->select(array('session.id as id', 'session.name as name', 'session.date as date', 'session.start_time as start_time', 'session.end_time as end_time', 'session.venue as venue', 'session.isactive as is_active', 'IFNULL((select is_present from session_attendance where batch_user_id = batch_user.id and session_attendance.session_id = session.id), "N") as is_attended'))->distinct()->from('session')->join('batch', 'session.batch_id', '=', 'batch.id')->join('batch_user', 'batch_user.batch_id', '=', 'batch.id')->whereMany(array('batch.id' => $data, 'batch_user.user_id' => $this->userId), '=')->orderBy('session.date', 'ASC')->orderBy('session.start_time', 'ASC');
 			$stmtExec = $stmt->execute();
 			$dataFetched = $stmtExec->fetchAll();
 			if (sizeof($dataFetched) > 0)
@@ -120,7 +121,7 @@ class BatchAction extends \App\BaseController
 	{
 		try
 		{
-			$stmt = $this->dbConn->select(array('Concat(person.first_name, " ", person.last_name) As name', 'person.mobile', 'person.email', 'city_taluka.name As city'))->from('batch_groups')->join('batch_user', 'batch_user.batch_groups_id', '=', 'batch_groups.id')->join('user', 'batch_user.user_id', '=', 'user.id')->join('person', 'person.user_id', '=', 'user.id')->join('user_address_details', 'user_address_details.user_id', '=', 'user.id')->join('city_taluka', 'user_address_details.city_taluka_id', '=', 'city_taluka.id')->whereMany(array('batch_groups.batch_id' => $data, 'batch_user.user_id' => $this->userId), '=');
+			$stmt = $this->dbConn->select(array('Concat(person.first_name, " ", person.last_name) As name', 'person.mobile', 'person.email', 'city_taluka.name As city'))->from('batch_groups')->join('batch_user', 'batch_user.batch_groups_id', '=', 'batch_groups.id')->join('user', 'batch_user.user_id', '=', 'user.id')->join('person', 'person.user_id', '=', 'user.id')->join('user_address_details', 'user_address_details.user_id', '=', 'user.id')->join('city_taluka', 'user_address_details.city_taluka_id', '=', 'city_taluka.id')->whereMany(array('batch_groups.batch_id' => $data), '=');
 			$stmtExec = $stmt->execute();
 			$dataFetched = $stmtExec->fetchAll();
 			if (sizeof($dataFetched) > 0)

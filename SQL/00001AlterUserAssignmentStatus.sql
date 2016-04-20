@@ -1,0 +1,1 @@
+ALTER TABLE `e3erp`.`user_assignment_status` MODIFY COLUMN `approved_by_user_id` INTEGER DEFAULT NULL;

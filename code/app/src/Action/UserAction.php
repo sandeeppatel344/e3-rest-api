@@ -177,7 +177,7 @@ class UserAction extends \App\BaseController
 					$otp = $this->randomString($this->settings['appsets']['otpNumOnly'], $this->settings['appsets']['otpNumChar']);
 					/*$updateStmt = $this->dbConn->update(array('password' => $otp))->table('user')->where('id', '=', $dataFetched[0]['id']);
 					$affectRow = $updateStmt->execute();*/
-					$stmt = $this->dbConn->insert(array('username', 'otp', 'created_date', 'expire_on', 'active'))->into('forgot_password_otp')->values(array($data['username'], $otp, 'now()', 'DATE_ADD(NOW(), INTERVAL 1 HOUR)', 'Y'));
+					$stmt = $this->dbConn->insert(array('username', 'otp', 'created_datetime', 'expire_on', 'active'))->into('forgot_password_otp')->values(array($data['username'], $otp, date('Y-m-d H:i:s'), date('Y-m-d H:i:s',strtotime(date('Y-m-d H:i:s')) +60*60), 'Y'));
 					$insId = $stmt->execute();
 					if ($insId > 1)
 					{
@@ -214,7 +214,7 @@ class UserAction extends \App\BaseController
 		{
 			if (isset($data['username']) && isset($data['otp']) && isset($data['new_password']))
 			{
-				$stmtOtp = $this->dbConn->select()->from('forgot_password_otp')->whereMany(array('username' => $data['username'], 'otp' => $data['otp'], 'active' => 'Y'), '=')->where('expire_on', '<=', 'now()');
+				$stmtOtp = $this->dbConn->select()->from('forgot_password_otp')->whereMany(array('username' => $data['username'], 'otp' => $data['otp'], 'active' => 'Y'), '=')->where('expire_on', '<=', date('Y-m-d H:i:s'));
 				$stmtOtpExec = $stmtOtp->execute();
 				$stmtOtpData = $stmtOtpExec->fetch();
 
@@ -321,7 +321,7 @@ class UserAction extends \App\BaseController
 			}
 			else
 			{
-				$stmt = $this->dbConn->insert(array('assignment_id','batch_user_id','assignment_status_id','user_comment'))->into('user_assignment_status')->values($data['assignment_id'], $dataBaUsIdFetched['id'], $data['status_id'], $data['user_comment']);
+				$stmt = $this->dbConn->insert(array('assignment_id','batch_user_id','assignment_status_id','user_comment'))->into('user_assignment_status')->values(array($data['assignment_id'], $dataBaUsIdFetched['id'], $data['status_id'], $data['user_comment']));
 				$insId = $stmt->execute();
 			}
 			if ($stmtAffRow == 1 || (is_numeric($insId) && $insId > 0) )

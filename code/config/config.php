@@ -27,7 +27,7 @@ return [
 		'appsets' => [
 			'tokenExpiry' => 8,
 			'tokenRefresh' => 7,
-			'otpNumOnly' => false,
+			'otpNumOnly' => true,
 			'otpNumChar' => 6,
 		],
 	],

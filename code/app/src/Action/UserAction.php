@@ -25,7 +25,7 @@ class UserAction extends \App\BaseController
 		$rqHead = $request->getHeaders();
 		$this->userToken = isset($rqHead['HTTP_E3_TOKEN']) ? $rqHead['HTTP_E3_TOKEN'] : false;
 
-		if ($args['action'] != 'login' && $args['action'] != 'otp')
+		if ($args['action'] != 'login' && $args['action'] != 'otp' && $args['param1'] != 'forgot')
 		{
 			$useIdChk = $this->verifyToken($this->userToken, $this->dbConn, $this->settings);
 			$this->userId = $this->getUserId($this->userToken, $this->dbConn);
@@ -208,61 +208,60 @@ class UserAction extends \App\BaseController
 		}
 	}
 
-	private function password($data = array())
+	private function forgotPassword($data = array())
 	{
 		try
 		{
-			if (isset($data['username']) && isset($data['otp']) && isset($data['new_password']))
-			{
-				$stmtOtp = $this->dbConn->select()->from('forgot_password_otp')->whereMany(array('username' => $data['username'], 'otp' => $data['otp'], 'active' => 'Y'), '=')->where('expire_on', '<=', date('Y-m-d H:i:s'));
-				$stmtOtpExec = $stmtOtp->execute();
-				$stmtOtpData = $stmtOtpExec->fetch();
+			$stmtOtp = $this->dbConn->select()->from('forgot_password_otp')->whereMany(array('username' => $data['username'], 'otp' => $data['otp'], 'active' => 'Y'), '=')->where('expire_on', '<=', date('Y-m-d H:i:s'));
+			$stmtOtpExec = $stmtOtp->execute();
+			$stmtOtpData = $stmtOtpExec->fetch();
 
-				if (sizeof('stmtOtpData') > 0)
+			if (sizeof('stmtOtpData') > 0)
+			{
+				$updateStmt = $this->dbConn->update(array('password' => $data['new_password']))->table('user')->whereMany(array('username' => $data['username']), '=');
+				$affectRow = $updateStmt->execute();
+				if ($affectRow == 1)
 				{
-					$updateStmt = $this->dbConn->update(array('password' => $data['new_password']))->table('user')->whereMany(array('id' => $dataFetched[0]['id'], 'username' => $data['username']), '=');
-					$affectRow = $updateStmt->execute();
-					if ($affectRow == 1)
-					{
-						$otpUp = $this->dbConn->update(array('active' => 'N'))->table('forgot_password_otp')->whereMany(array('username' => $data['username'], 'otp' => $data['otp'], 'active' => 'Y'), '=');
-						$otpAffR = $otpUp->execute();
-						return array("code" => 200);
-					}
-					else
-					{
-						$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors" => array('Username not found/Multiple User(s) found'));
-						return array("code" => 422, "data" => $retMessage);
-					}
+					$otpUp = $this->dbConn->update(array('active' => 'N'))->table('forgot_password_otp')->whereMany(array('username' => $data['username'], 'otp' => $data['otp'], 'active' => 'Y'), '=');
+					$otpAffR = $otpUp->execute();
+					return array("code" => 200);
 				}
 				else
 				{
-					$retMessage = array("Code" => "SERVICE_ERROR", "message" => "OTP Expired.", "errors" => array('OTP Expired please generate new.'));
+					$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors111" => array('Username not found/Multiple User(s) found'));
 					return array("code" => 422, "data" => $retMessage);
-				}
-			}
-			elseif (isset($data['current_password']) && isset($data['new_password']))
-			{
-				try
-				{
-					$userStmt = $this->dbConn->select()->from('token')->where('token', '=', $this->userToken[0]);
-					$stmtExec = $userStmt->execute();
-					$dataFetched = $stmtExec->fetch();
-					$updateStmt = $this->dbConn->update(array('password' => $data['new_password']))->table('user')->whereMany(array('id' => $dataFetched['user_id'], 'password' => $data['current_password']), '=');
-					$affectRow = $updateStmt->execute();
-					if ($affectRow == 1)
-					{
-						return array("code" => 200);
-					}
-				}
-				catch (\Exception $e)
-				{
-					throw new \Exception("Error Processing Request".$e->getMessage(), 1);
 				}
 			}
 			else
 			{
-				$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors" => array('Username not sent'));
+				$retMessage = array("Code" => "SERVICE_ERROR", "message" => "OTP Expired.", "errors" => array('OTP Expired please generate new.'));
 				return array("code" => 422, "data" => $retMessage);
+			}
+		}
+		catch (\PDOException $e)
+		{
+			$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors1" => array($e->getMessage()));
+			return array("code" => 422, "data" => $retMessage);
+		}
+		catch (\Exception $e)
+		{
+			$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Invalid User.", "errors11" => array($e->getMessage()));
+			return array("code" => 422, "data" => $retMessage);
+		}
+	}
+
+	private function password($data = array())
+	{
+		try
+		{
+			$userStmt = $this->dbConn->select()->from('token')->where('token', '=', $this->userToken[0]);
+			$stmtExec = $userStmt->execute();
+			$dataFetched = $stmtExec->fetch();
+			$updateStmt = $this->dbConn->update(array('password' => $data['new_password']))->table('user')->whereMany(array('id' => $dataFetched['user_id'], 'password' => $data['current_password']), '=');
+			$affectRow = $updateStmt->execute();
+			if ($affectRow == 1)
+			{
+				return array("code" => 200);
 			}
 		}
 		catch (\PDOException $e)

@@ -12,6 +12,7 @@ class UserAction extends \App\BaseController
 	private $dbConn;
 	private $settings;
 	private $userToken;
+	private $userId;
 
 	public function __construct($logger, $pdo, $settings)
 	{

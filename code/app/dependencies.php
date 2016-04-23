@@ -59,3 +59,11 @@ $container[App\Action\BatchAction::class] = function ($c) {
 $container[App\Action\SessionAction::class] = function ($c) {
 	return new App\Action\SessionAction($c->get('logger'), $c->get('db'), $c->get('settings'));
 };
+
+$container[App\Action\ProfileAction::class] = function ($c) {
+	return new App\Action\ProfileAction($c->get('logger'), $c->get('db'), $c->get('settings'));
+};
+
+$container[App\Action\CountryAction::class] = function ($c) {
+	return new App\Action\CountryAction($c->get('logger'), $c->get('db'), $c->get('settings'));
+};

@@ -67,3 +67,7 @@ $container[App\Action\ProfileAction::class] = function ($c) {
 $container[App\Action\CountryAction::class] = function ($c) {
 	return new App\Action\CountryAction($c->get('logger'), $c->get('db'), $c->get('settings'));
 };
+
+$container[App\Action\GeneralAction::class] = function ($c) {
+	return new App\Action\GeneralAction($c->get('logger'), $c->get('db'), $c->get('settings'));
+};

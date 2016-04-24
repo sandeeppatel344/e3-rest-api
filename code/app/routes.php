@@ -12,3 +12,4 @@ $app->get('/batch/{id}/{action}', App\Action\BatchAction::class);
 $app->get('/batch/{id}/{action}/{param1}', App\Action\BatchAction::class);
 $app->get('/session/{id}/{action}', App\Action\SessionAction::class);
 $app->map(['POST', 'GET'], '/profile/{action}', App\Action\ProfileAction::class);
+$app->get('/e3/{action}', App\Action\GeneralAction::class);

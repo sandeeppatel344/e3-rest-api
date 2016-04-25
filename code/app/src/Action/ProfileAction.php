@@ -9,7 +9,7 @@ use \Psr\Http\Message\ResponseInterface as Response;
 class ProfileAction extends \App\BaseController
 {
 	public $logger;
-	
+
 	private $dbConn;
 	private $settings;
 	private $userToken;
@@ -18,6 +18,7 @@ class ProfileAction extends \App\BaseController
 	protected $spouse;
 	protected $children;
 	protected $userData;
+	protected $address;
 	protected $book;
 
 	public function __construct($logger, $pdo, $settings)
@@ -69,21 +70,26 @@ class ProfileAction extends \App\BaseController
 	private function get()
 	{
 		$data=array();
-		$stmt=$this->dbConn->select(array('person.*', 'user.username', 'user_address_details.address_line_1', 'user_address_details.address_line_2', 'user_address_details.pincode', 'user_address_details.street_landmark', 'user_address_details.country_id', 'user_address_details.state_id', 'user_address_details.district_id', 'user_address_details.city_taluka_id'))->from('person')->join('user', 'person.user_id', '=', 'user.id')->join('user_address_details', 'user_address_details.user_id', '=', 'user.id')->where('user.id', '=', $this->userId);
+		$stmt=$this->dbConn->select(array('person.*', 'user.username'))->from('person')->join('user', 'person.user_id', '=', 'user.id')->where('user.id', '=', $this->userId);
 		$stmtExec = $stmt->execute();
 		$stmtFetched = $stmtExec->fetch();
-
+		$stmtFetched['address'] = $this->dbConn->select()->from('user_address_details')->where('user_id', '=', $this->userId)->execute()->fetch();
 		$stmtFetched['spouse'] = array();
 		$stmtFetched['children'] = array();
 
 		$stmtFamily = $this->dbConn->select()->from('user_family_details')->where('user_id', '=', $this->userId);
 		$stmtFExec = $stmtFamily->execute();
 		$stmtFFetched = $stmtFExec->fetchAll();
-		if(sizeof($stmtFFetched) > 0){
-			for ($i=0; $i < sizeof($stmtFFetched); $i++) { 
-				if(strtoupper($stmtFFetched[$i]['relation']) == 'SPOUSE') {
+		if (sizeof($stmtFFetched) > 0)
+		{
+			for ($i=0; $i < sizeof($stmtFFetched); $i++)
+			{
+				if (strtoupper($stmtFFetched[$i]['relation']) == 'SPOUSE')
+				{
 					array_push($stmtFetched['spouse'], $stmtFFetched[$i]);
-				} else {
+				}
+				else
+				{
 					array_push($stmtFetched['children'], $stmtFFetched[$i]);
 				}
 			}
@@ -93,9 +99,12 @@ class ProfileAction extends \App\BaseController
 		$stmtBExec = $stmtBook->execute();
 		$stmtBFetched = $stmtBExec->fetchAll();
 		$stmtFetched['books'] = $stmtBFetched;
-		if (sizeof($stmtFetched) > 0) {
+		if (sizeof($stmtFetched) > 0)
+		{
 			return array("code" => 200, "data" => $stmtFetched);
-		} else {
+		}
+		else
+		{
 			$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Profile loading failed.", "errors" => array('error occured'));
 			return array("code" => 422, "data" => $retMessage);
 		}
@@ -107,33 +116,303 @@ class ProfileAction extends \App\BaseController
 		unset($data['children']);
 		$this->spouse = $data['spouse'];
 		unset($data['spouse']);
-		$this->book = $data['book'];
-		unset($data['book']);
+		$this->book = $data['books'];
+		unset($data['books']);
+		$this->address = $data['address'];
+		unset($data['address']);
+		unset($data['username']);
 		$this->userData = $data;
-		return $this->updateAll();
+		if ($this->updateAll())
+		{
+			return array("code" => 200);
+		}
+		else
+		{
+			$retMessage = array("Code" => "APPLICATION_ERROR", "message" => "Profile update failed.", "errors" => array('error occured while updating profile'));
+			return array("code" => 422, "data" => $retMessage);
+		}
 	}
 
 	protected function updateAll()
 	{
-		$userUpdt = $this->updateUser();
-		$familyUpdt = $this->updateFamily();
-		$bookUpdt = $this->updateBook();
-		exit;
-		return array($userUpdt, $familyUpdt, $bookUpdt);
+		$userUpdt = strpos($this->updateUser(), 'error');
+		$addressUpdt = strpos($this->updateAdd(), 'error');
+		$spouseUpdt = strpos($this->updateSpouse(), 'error');
+		$childrenUpdt = strpos($this->updateChildren(), 'error');
+		$bookUpdt = strpos($this->updateBook(), 'error');
+		return count(array_keys((array($userUpdt, $addressUpdt, $spouseUpdt, $childrenUpdt, $bookUpdt)), false)) == count(array($userUpdt, $addressUpdt, $spouseUpdt, $childrenUpdt, $bookUpdt));
 	}
 
 	protected function updateUser()
 	{
-		echo "USER";
+		$retData;
+		try
+		{
+			$stmtData = $this->getQueryData($this->userData);
+			if ($stmtData['query'] == 'update')
+			{
+				$data = array();
+				for ($i=0; $i < sizeof($stmtData['columns']); $i++)
+				{
+					if (!is_null($stmtData['colData'][$i]))
+					{
+						$data[$stmtData['columns'][$i]] = $stmtData['colData'][$i];
+					}
+				}
+				$stmt = $this->dbConn->update($data)->table('person')->whereMany($stmtData['clause'], '=');
+				$stmtExec = $stmt->execute();
+				if ($stmtExec == 1)
+				{
+					$retData = "User Profile Updated";
+				}
+				else
+				{
+					$retData = "User Profile not updated";
+				}
+			}
+		}
+		catch (\PDOException $pe)
+		{
+				var_dump($pe);
+				exit();
+			$retData = "User Profile update error. ".$pe;
+		}
+		catch (\Exception $e)
+		{
+			$retData = "User Profile update error. ".$e;
+		}
+		return $retData;
 	}
 
-	protected function updateFamily()
+	protected function updateAdd()
 	{
-		echo "FAMILY";
+		$retData;
+		try
+		{
+			$stmtData = $this->getQueryData($this->address);
+			if ($stmtData['query'] == 'update')
+			{
+				$data = array();
+				for ($i=0; $i < sizeof($stmtData['columns']); $i++)
+				{
+					if (!is_null($stmtData['colData'][$i]))
+					{
+						$data[$stmtData['columns'][$i]] = $stmtData['colData'][$i];
+					}
+				}
+				$stmt = $this->dbConn->update($data)->table('user_address_details')->whereMany($stmtData['clause'], '=');
+				$stmtExec = $stmt->execute();
+				if ($stmtExec == 1)
+				{
+					$retData = "User Profile Updated";
+				}
+				else
+				{
+					$retData = "User Profile not updated";
+				}
+			}
+		}
+		catch (\PDOException $pe)
+		{
+				var_dump($pe);
+				exit();
+			$retData = "User AProfile update error. ".$pe;
+		}
+		catch (\Exception $e)
+		{
+			$retData = "User AProfile update error. ".$e;
+		}
+		return $retData;
+	}
+
+	protected function updateSpouse()
+	{
+		$retData = array();
+		for ($i=0; $i < sizeof($this->spouse); $i++)
+		{
+			try
+			{
+				$stmtData = $this->getQueryData($this->spouse[$i]);
+				if ($stmtData['query'] == 'update')
+				{
+					$data = array();
+					for ($j=0; $j < sizeof($stmtData['columns']); $j++)
+					{
+						if (!is_null($stmtData['colData'][$j]))
+						{
+							$data[$stmtData['columns'][$j]] = $stmtData['colData'][$j];
+						}
+					}
+					$stmt = $this->dbConn->update($data)->table('user_family_details')->whereMany($stmtData['clause'], '=');
+					$stmtExec = $stmt->execute();
+					if ($stmtExec == 1)
+					{
+						$retData[] = "User Profile Updated";
+					}
+					else
+					{
+						$retData[] = "User Profile not updated";
+					}
+				}
+				else
+				{
+					$stmt = $this->dbConn->insert($stmtData['columns'])->into('user_family_details')->values($stmtData['colData']);
+					$stmtExec = $stmt->execute();
+					if (is_numeric($stmtExec) && $stmtExec > 0)
+					{
+						$retData[] = "User Profile updated.";
+					}
+				}
+			}
+			catch (\PDOException $pe)
+			{
+				$retData[] = "User SProfile update error. ".$pe;
+			}
+			catch (\Exception $e)
+			{
+				$retData[] = "User SProfile update error. ".$e;
+			}
+		}
+		return implode(', ', $retData);
+	}
+
+	protected function updateChildren()
+	{
+		$retData = array();
+		for ($i=0; $i < sizeof($this->children); $i++)
+		{
+			try
+			{
+				$stmtData = $this->getQueryData($this->children[$i]);
+				if ($stmtData['query'] == 'update')
+				{
+					$data = array();
+					for ($j=0; $j < sizeof($stmtData['columns']); $j++)
+					{
+						if (!is_null($stmtData['colData'][$j]))
+						{
+							$data[$stmtData['columns'][$j]] = $stmtData['colData'][$j];
+						}
+					}
+					$stmt = $this->dbConn->update($data)->table('user_family_details')->whereMany($stmtData['clause'], '=');
+					$stmtExec = $stmt->execute();
+					if ($stmtExec == 1)
+					{
+						$retData[] = "User Profile Updated";
+					}
+					else
+					{
+						$retData[] = "User Profile not updated";
+					}
+				}
+				else
+				{
+					$stmt = $this->dbConn->insert($stmtData['columns'])->into('user_family_details')->values($stmtData['colData']);
+					$stmtExec = $stmt->execute();
+					if (is_numeric($stmtExec) && $stmtExec > 0)
+					{
+						$retData[] = "User Profile updated.";
+					}
+				}
+			}
+			catch (\PDOException $pe)
+			{
+				$retData[] = "User CProfile update error. ".$pe;
+			}
+			catch (\Exception $e)
+			{
+				$retData[] = "User CProfile update error. ".$e;
+			}
+		}
+		return implode(', ', $retData);
 	}
 
 	protected function updateBook()
 	{
-		echo "BOOK";
+		$retData = array();
+		for ($i=0; $i < sizeof($this->book); $i++)
+		{
+			try
+			{
+				$stmtData = $this->getQueryData($this->book[$i]);
+				if ($stmtData['query'] == 'update')
+				{
+					$data = array();
+					for ($j=0; $j < sizeof($stmtData['columns']); $j++)
+					{
+						if (!is_null($stmtData['colData'][$j]))
+						{
+							$data[$stmtData['columns'][$j]] = $stmtData['colData'][$j];
+						}
+					}
+					$stmt = $this->dbConn->update($data)->table('user_books')->whereMany($stmtData['clause'], '=');
+					$stmtExec = $stmt->execute();
+					if ($stmtExec == 1)
+					{
+						$retData[] = "User Profile Updated";
+					}
+					else
+					{
+						$retData[] = "User Profile not updated";
+					}
+				}
+				else
+				{
+					$stmt = $this->dbConn->insert($stmtData['columns'])->into('user_books')->values($stmtData['colData']);
+					$stmtExec = $stmt->execute();
+					if (is_numeric($stmtExec) && $stmtExec > 0)
+					{
+						$retData[] = "User Profile updated.";
+					}
+				}
+			}
+			catch (\PDOException $pe)
+			{
+				$retData[] = "User BProfile update error. ".$pe;
+			}
+			catch (\Exception $e)
+			{
+				$retData[] = "User BProfile update error. ".$e;
+			}
+		}
+		return implode(', ', $retData);
+	}
+
+	protected function getQueryData($data)
+	{
+		$whereData = array();
+		foreach ($data as $key => $value)
+		{
+			if ($key == 'id' && is_numeric($value))
+			{
+				$whereData['user_id'] = $this->userId;
+				$whereData[$key] = $value;
+			}
+			elseif ($key == "user_id")
+			{
+				//Do NOT UPDATE USER ID as IT will be worked out
+				$cols[] = 'user_id';
+				$vals[] = $this->userId;
+			}
+			else
+			{
+				$cols[] = $key;
+				$vals[] = $value;
+			}
+		}
+		if (!array_key_exists('user_id', $cols))
+		{
+			$cols[] = 'user_id';
+			$vals[] = $this->userId;
+		}
+		if (sizeof($whereData) > 0)
+		{
+			$query = 'update';
+		}
+		else
+		{
+			$query = 'select';
+		}
+		return array('query' => $query, 'columns' => $cols, 'colData' => $vals, 'clause' => $whereData);
 	}
 }

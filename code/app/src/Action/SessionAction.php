@@ -6,6 +6,14 @@ use Psr\Log\LoggerInterface;
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 
+/**
+ * Session Class
+ * This class is responssible for all session related data to be returned to the requesting application
+ * @author Mohan Cheema <mohan@cigno-it.com>
+ * @version 1.0
+ * @package App
+ * @subpackage App\Action
+ */
 class SessionAction extends \App\BaseController
 {
 
@@ -22,6 +30,14 @@ class SessionAction extends \App\BaseController
 		$this->settings = $settings;
 	}
 
+	/**
+	 * Function invoker function
+	 * Based to request from application appropriate function is called
+	 * @param class $request HTTP Service request interface
+	 * @param class $respone HTTP Response interface
+	 * @param array $args
+	 * @return json JSON response back to requesting application.
+	 */
 	public function __invoke(Request $request, Response $response, $args)
 	{
 		$rqHead = $request->getHeaders();
@@ -60,6 +76,11 @@ class SessionAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to get the assignment list for the session
+	 * @param integer $data session id
+	 * @return array $data
+	 */
 	private function assignment($data = null)
 	{
 		if (!is_null($data))
@@ -91,6 +112,11 @@ class SessionAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to get the media list for the session
+	 * @param integer $data session id
+	 * @return array $data
+	 */
 	private function media($data = null)
 	{
 		if (!is_null($data))
@@ -122,6 +148,11 @@ class SessionAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to get the disctinction list for the session
+	 * @param integer $data session id
+	 * @return array $data
+	 */
 	private function distinction($data = null)
 	{
 		if (!is_null($data))

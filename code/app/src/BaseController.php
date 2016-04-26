@@ -1,9 +1,22 @@
 <?php
-
 namespace App;
 
+/**
+ * This is a base which is extended by other Action calsses.
+ * @author Mohan Cheema <mohan@cigno-it.com>
+ * @version 1.0
+ * @package App
+ */
 class BaseController
 {
+	/**
+	 * Generate Token protected function
+	 * @param integer $userId to store token against in DB
+	 * @param class $db to connect to database
+	 * @param integer $expiry token expiry time
+	 * @param ineteger $refresh token time extention
+	 * @return array $tokenData consisting of token expiry time and refresh time
+	 */
 	protected function generateToken($userId, $db, $expiry, $refresh)
 	{
 		try
@@ -16,10 +29,21 @@ class BaseController
 		}
 		catch (\Exception $e)
 		{
-			throw new \Exception("Error generating token" , 1);
+			throw new \Exception("Error generating token", 1);
 		}
 	}
 
+	/**
+	 * Check token protected function
+	 * This checks the token supplied by the application is still valid or not.
+	 * If valid continue with the request. Else throw an error.
+	 * @param array $tokens contain token to be checked for validation
+	 * @param integer $userId ID of the user
+	 * @param class $db to connect to database
+	 * @param integer $expiry token expiry time
+	 * @param ineteger $refresh token time extention
+	 * @return array $tokenData consisting of token expiry time and refresh time
+	 */
 	protected function checkToken($tokens, $userId, $db, $expiry, $refresh, $logger = null, $service = null)
 	{
 		$token = $tokens[0];
@@ -30,7 +54,8 @@ class BaseController
 		{
 			try
 			{
-	            if (($token == null || $token == '') && ($service != 'login' && $service != null)) {
+	            if (($token == null || $token == '') && ($service != 'login' && $service != null))
+				{
 	                throw new \Exception("User not authenticated");
 	            }
 				$stmt = $db->select()->from('token')->where('token', '=', $token)->whereMany(array('user_id'=>$userId, 'token'=>$token), '=');
@@ -79,12 +104,25 @@ class BaseController
 			{
 				throw new \Exception("Error verifying token.", 2);
 			}
-		} else {
+		}
+		else
+		{
 			// echo "Else";
 			throw new \Exception("Error occured.", 2);
 		}
 	}
 
+	/**
+	 * insertUpdateToken protected function
+	 * This will make an entry in token database if not exist or new token is generated.
+	 * If token has expired updated the active to N. If token is with in refresh time limit extends the expiry time.
+	 * @param class $db to connect to database
+	 * @param integer $userId ID of the user
+	 * @param string $token contain token to be updated else bool false
+	 * @param string $prevToken previous token to be expired
+	 * @param boolean $setExpire true or false
+	 * @return boolean true or false
+	 */
 	protected function insertUpdateToken($db, $userId, $action = 'insert', $token = false, $prevToken = null, $setExpire = false)
 	{
 		$affRow;
@@ -115,7 +153,6 @@ class BaseController
 		{
 			if (!is_null($prevToken) && $setExpire)
 			{
-				echo ($setExpire) ? 'True' : 'False';
 				try
 				{
 					$expStmt = $db->update(array('isactive' => 'N'))->table('token')->whereMany(array('token'=> $prevToken, 'user_id' => $userId), '=');
@@ -150,6 +187,12 @@ class BaseController
 		}
 	}
 
+	/**
+	 * Based on token get the user id from the database
+	 * @param string $token token for which user id to be fecthed
+	 * @param class $db to connect to database
+	 * @return integer $userId.
+	 */
 	protected function getUserId($token, $db)
 	{
 		$stmt = $db->select()->from('token')->where('token', '=', $token[0]);
@@ -159,6 +202,12 @@ class BaseController
 		return isset($dataFetched['user_id']) ? $dataFetched['user_id'] : null;
 	}
 
+	/**
+	 * Function generate random otp number
+	 * @param boolean $onlyNum true or for number only OTP
+	 * @param integer $numChar number of charachters for OTP
+	 * @return $otpSend OTP number to be sent
+	 */
 	protected function randomString($onlyNum = false, $numChar = 4)
 	{
 		$string['smAlpha'] = 'abcdefghijklmnopqrstuvwxyz';
@@ -180,9 +229,12 @@ class BaseController
 
 	protected function verifyToken($token, $db, $settings)
 	{
-		try {
+		try
+		{
 				$gToken = $this->checkToken($token, $this->getUserId($token, $db), $db, $settings['appsets']['tokenExpiry'], $settings['appsets']['tokenRefresh'], $this->logger, 'login');
-		} catch (\Exception $e) {
+		}
+		catch (\Exception $e)
+		{
 			$retMessage = array("Code" => "SERVICE_ERROR", "message" => "Invalid token supplied...", "errors" => array($e->getMessage()));
 				return array("code" => 401, "data" => $retMessage);
 		}

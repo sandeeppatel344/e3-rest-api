@@ -1,11 +1,15 @@
 <?php
-// DIC configuration
+/**
+ * DIC configuration
+ */
 $container = $app->getContainer();
-// -----------------------------------------------------------------------------
-// Service providers
-// -----------------------------------------------------------------------------
+/**
+ * Service providers
+ */
 
-// Twig
+/**
+ * Twig
+ */
 $container['view'] = function ($c) {
 	$settings = $c->get('settings');
 	$view = new Slim\Views\Twig($settings['view']['template_path'], $settings['view']['twig']);
@@ -15,15 +19,19 @@ $container['view'] = function ($c) {
 	return $view;
 };
 
-// Flash messages
+/**
+ * Flash messages
+ */
 $container['flash'] = function ($c) {
 	return new Slim\Flash\Messages;
 };
 
-// -----------------------------------------------------------------------------
-// Service factories
-// -----------------------------------------------------------------------------
-// monolog
+/**
+ * Service factories
+ */
+/**
+ * monolog Log Factory
+ */
 $container['logger'] = function ($c) {
 	$settings = $c->get('settings');
 	$logger = new Monolog\Logger($settings['logger']['name']);
@@ -32,7 +40,9 @@ $container['logger'] = function ($c) {
 	return $logger;
 };
 
-// Database
+/**
+ * Database Factory
+ */
 $container['db'] = function ($c) {
 	$settings = $c->get('settings');
 	$dsn = 'mysql:host='.$settings['db']['host'].';dbname='.$settings['db']['dbname'].';charset=utf8';
@@ -40,9 +50,9 @@ $container['db'] = function ($c) {
 	return $pdo;
 };
 
-// -----------------------------------------------------------------------------
-// Action factories
-// -----------------------------------------------------------------------------
+/**
+ * Action factories
+ */
 $container[App\Action\HomeAction::class] = function ($c) {
 	return new App\Action\HomeAction($c->get('view'), $c->get('logger'));
 	// return new App\Action\HomeAction($c->get('logger'));

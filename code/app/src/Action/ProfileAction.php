@@ -6,6 +6,15 @@ use Psr\Log\LoggerInterface;
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 
+/**
+ * Profile Class
+ * This class is responssible for all profile related data to be returned to the requesting application.
+ * ALos, to update the profile changes done
+ * @author Mohan Cheema <mohan@cigno-it.com>
+ * @version 1.0
+ * @package App
+ * @subpackage App\Action
+ */
 class ProfileAction extends \App\BaseController
 {
 	public $logger;
@@ -28,6 +37,14 @@ class ProfileAction extends \App\BaseController
 		$this->settings = $settings;
 	}
 
+	/**
+	 * Function invoker function
+	 * Based to request from application appropriate function is called
+	 * @param class $request HTTP Service request interface
+	 * @param class $respone HTTP Response interface
+	 * @param array $args
+	 * @return json JSON response back to requesting application.
+	 */
 	public function __invoke(Request $request, Response $response, $args)
 	{
 		$rqHead = $request->getHeaders();
@@ -67,6 +84,10 @@ class ProfileAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to get user profile
+	 * @return array profile array
+	 */
 	private function get()
 	{
 		$data=array();
@@ -110,6 +131,10 @@ class ProfileAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to update user profile
+	 * @return array boolean
+	 */
 	private function update($data)
 	{
 		$this->children = $data['children'];
@@ -133,6 +158,10 @@ class ProfileAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to upaate all user profile
+	 * @return boolean
+	 */
 	protected function updateAll()
 	{
 		$userUpdt = strpos($this->updateUser(), 'error');
@@ -143,6 +172,10 @@ class ProfileAction extends \App\BaseController
 		return count(array_keys((array($userUpdt, $addressUpdt, $spouseUpdt, $childrenUpdt, $bookUpdt)), false)) == count(array($userUpdt, $addressUpdt, $spouseUpdt, $childrenUpdt, $bookUpdt));
 	}
 
+	/**
+	 * Function to update user profile
+	 * @return string message
+	 */
 	protected function updateUser()
 	{
 		$retData;
@@ -184,6 +217,10 @@ class ProfileAction extends \App\BaseController
 		return $retData;
 	}
 
+	/**
+	 * Function to update user Addrress
+	 * @return string message
+	 */
 	protected function updateAdd()
 	{
 		$retData;
@@ -225,6 +262,10 @@ class ProfileAction extends \App\BaseController
 		return $retData;
 	}
 
+	/**
+	 * Function to update user spouse details
+	 * @return string message
+	 */
 	protected function updateSpouse()
 	{
 		$retData = array();
@@ -276,6 +317,10 @@ class ProfileAction extends \App\BaseController
 		return implode(', ', $retData);
 	}
 
+	/**
+	 * Function to update user children
+	 * @return string message
+	 */
 	protected function updateChildren()
 	{
 		$retData = array();
@@ -327,6 +372,10 @@ class ProfileAction extends \App\BaseController
 		return implode(', ', $retData);
 	}
 
+	/**
+	 * Function to update user book
+	 * @return string message
+	 */
 	protected function updateBook()
 	{
 		$retData = array();
@@ -378,6 +427,10 @@ class ProfileAction extends \App\BaseController
 		return implode(', ', $retData);
 	}
 
+	/**
+	 * Function to generate
+	 * @return string message
+	 */
 	protected function getQueryData($data)
 	{
 		$whereData = array();

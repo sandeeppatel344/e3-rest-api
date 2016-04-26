@@ -6,6 +6,14 @@ use Psr\Log\LoggerInterface;
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 
+/**
+ * User Class
+ * This class is responssible for all User related data to be returned to the requesting application
+ * @author Mohan Cheema <mohan@cigno-it.com>
+ * @version 1.0
+ * @package App
+ * @subpackage App\Action
+ */
 class UserAction extends \App\BaseController
 {
 	public $logger;
@@ -21,6 +29,14 @@ class UserAction extends \App\BaseController
 		$this->settings = $settings;
 	}
 
+	/**
+	 * Function invoker function
+	 * Based to request from application appropriate function is called
+	 * @param class $request HTTP Service request interface
+	 * @param class $respone HTTP Response interface
+	 * @param array $args
+	 * @return json JSON response back to requesting application.
+	 */
 	public function __invoke(Request $request, Response $response, $args)
 	{
 		$rqHead = $request->getHeaders();
@@ -86,6 +102,11 @@ class UserAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to login user to application
+	 * @param array $data username and password
+	 * @return array $data
+	 */
 	private function login($data = array())
 	{
 		$roleId = array();
@@ -164,6 +185,11 @@ class UserAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to generate OTP
+	 * @param array $data username
+	 * @return array $data
+	 */
 	private function generateOtp($data = array())
 	{
 		try
@@ -178,7 +204,7 @@ class UserAction extends \App\BaseController
 					$otp = $this->randomString($this->settings['appsets']['otpNumOnly'], $this->settings['appsets']['otpNumChar']);
 					/*$updateStmt = $this->dbConn->update(array('password' => $otp))->table('user')->where('id', '=', $dataFetched[0]['id']);
 					$affectRow = $updateStmt->execute();*/
-					$stmt = $this->dbConn->insert(array('username', 'otp', 'created_datetime', 'expire_on', 'active'))->into('forgot_password_otp')->values(array($data['username'], $otp, date('Y-m-d H:i:s'), date('Y-m-d H:i:s',strtotime(date('Y-m-d H:i:s')) +60*60), 'Y'));
+					$stmt = $this->dbConn->insert(array('username', 'otp', 'created_datetime', 'expire_on', 'active'))->into('forgot_password_otp')->values(array($data['username'], $otp, date('Y-m-d H:i:s'), date('Y-m-d H:i:s', strtotime(date('Y-m-d H:i:s')) +60*60), 'Y'));
 					$insId = $stmt->execute();
 					if ($insId > 1)
 					{
@@ -209,6 +235,10 @@ class UserAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to reset password
+	 * @param array $data username, otp and new password
+	 */
 	private function forgotPassword($data = array())
 	{
 		try
@@ -251,6 +281,11 @@ class UserAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to reset user password
+	 * @param array $data current password and new password
+	 * @return array $data
+	 */
 	private function password($data = array())
 	{
 		try
@@ -277,6 +312,11 @@ class UserAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to get user course list
+	 * @param array $data username and password
+	 * @return array $data
+	 */
 	private function course($data = array())
 	{
 		try
@@ -306,6 +346,11 @@ class UserAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to update / insert the assignment status
+	 * @param array $data username and password
+	 * @return array $data
+	 */
 	private function assignment($data = array())
 	{
 		try

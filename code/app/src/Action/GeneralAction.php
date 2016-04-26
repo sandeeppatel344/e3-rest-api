@@ -6,6 +6,15 @@ use Psr\Log\LoggerInterface;
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 
+/**
+ * Class to return the master list of the following:
+ *  1. Turnover
+ *  2. Occupation
+ * @author Mohan Cheema <mohan@cigno-it.com>
+ * @version 1.0
+ * @package App
+ * @subpackage App\Action
+ */
 class GeneralAction extends \App\BaseController
 {
 	public $logger;
@@ -21,6 +30,14 @@ class GeneralAction extends \App\BaseController
 		$this->settings = $settings;
 	}
 
+	/**
+	 * Function invoker function
+	 * Based to request from application appropriate function is called
+	 * @param class $request HTTP Service request interface
+	 * @param class $respone HTTP Response interface
+	 * @param array $args
+	 * @return json JSON response back to requesting application.
+	 */
 	public function __invoke(Request $request, Response $response, $args)
 	{
 		/*var_dump($args);
@@ -61,6 +78,10 @@ class GeneralAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to return business turnover list
+	 * @return array
+	 */
 	private function turnover()
 	{
 		try
@@ -82,6 +103,10 @@ class GeneralAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to return occupation list
+	 * @return array
+	 */
 	private function occupation()
 	{
 		try

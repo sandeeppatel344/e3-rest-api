@@ -1,5 +1,7 @@
 <?php
-// Routes
+/**
+ * List of valid Routes
+ */
 $app->get('/', App\Action\HomeAction::class)->setName('homepage');
 $app->get('/country', App\Action\CountryAction::class);
 $app->get('/country/{id}/{action}', App\Action\CountryAction::class);

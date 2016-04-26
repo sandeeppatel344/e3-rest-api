@@ -6,6 +6,14 @@ use Psr\Log\LoggerInterface;
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 
+/**
+ * Batch Class
+ * This class is responssible for all batch related data to be returned to the requesting application
+ * @author Mohan Cheema <mohan@cigno-it.com>
+ * @version 1.0
+ * @package App
+ * @subpackage App\Action
+ */
 class BatchAction extends \App\BaseController
 {
 
@@ -15,6 +23,9 @@ class BatchAction extends \App\BaseController
 	private $userToken;
 	private $userId;
 
+	/**
+	 * Consturctor function
+	 */
 	public function __construct($logger, $pdo, $settings)
 	{
 		$this->logger = $logger;
@@ -22,6 +33,14 @@ class BatchAction extends \App\BaseController
 		$this->settings = $settings;
 	}
 
+	/**
+	 * Function invoker function
+	 * Based to request from application appropriate function is called
+	 * @param class $request HTTP Service request interface
+	 * @param class $respone HTTP Response interface
+	 * @param array $args
+	 * @return json JSON response back to requesting application.
+	 */
 	public function __invoke(Request $request, Response $response, $args)
 	{
 		$rqHead = $request->getHeaders();
@@ -61,6 +80,11 @@ class BatchAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to list the batch sessions
+	 * @param $data batch id passed as URL argument
+	 * @return array batch session data
+	 */
 	private function session($data = null)
 	{
 		try
@@ -89,6 +113,11 @@ class BatchAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to list the batch meetings
+	 * @param $data batch id passed as URL argument
+	 * @return array batch meeting data
+	 */
 	private function meeting($data = null)
 	{
 		try
@@ -117,13 +146,18 @@ class BatchAction extends \App\BaseController
 		}
 	}
 
+	/**
+	 * Function to list the batch group members
+	 * @param $data batch id passed as URL argument
+	 * @return array batch group members
+	 */
 	private function memberGroup($data = null)
 	{
 		try
 		{
 			$st=$this->dbConn->select(array("batch_groups_id"))->from('batch_user')->where('user_id', '=', $this->userId)->execute()->fetch();
 			$st['batch_groups_id'] = (!is_null($st['batch_groups_id'])) ? $st['batch_groups_id'] : "" ;
-			
+
 			$st2=$this->dbConn->select(array('user_id'))->from('batch_user')->where('batch_groups_id', '=', $st['batch_groups_id'])->execute()->fetchAll();
 			$gUser = array();
 
@@ -131,7 +165,7 @@ class BatchAction extends \App\BaseController
 			{
 				array_push($gUser, $st2[$i]['user_id']);
 			}
-			if(sizeof($gUser) > 0)
+			if (sizeof($gUser) > 0)
 			{
 				$stmt = $this->dbConn->select(array('Concat(person.first_name, " ", person.last_name) As name', 'person.mobile', 'person.email', 'city_taluka.name As city'))->from('user')->join('person', 'person.user_id', '=', 'user.id')->join('user_address_details', 'user_address_details.user_id', '=', 'user.id')->join('city_taluka', 'user_address_details.city_taluka_id', '=', 'city_taluka.id')->whereIn('user.id', $gUser);
 				$stmtExec = $stmt->execute();

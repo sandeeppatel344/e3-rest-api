@@ -1,10 +1,14 @@
 <?php
 return [
 	'settings' => [
-		// Slim Settings
+		/**
+		 * Slim Settings
+		 */
 		'determineRouteBeforeAppMiddleware' => false,
 		'displayErrorDetails' => true,
-		// View settings
+		/**
+		 * View settings
+		 */
 		'view' => [
 			'template_path' => __DIR__ . '/../templates',
 			'twig' => [
@@ -13,17 +17,25 @@ return [
 				'auto_reload' => true,
 			],
 		],
-		// monolog settings
+		/**
+		 * monolog settings
+		 */
 		'logger' => [
 			'name' => 'app',
-			'path' => __DIR__ . '/../logs/app.log',
+			'path' => __DIR__ . '/../logs/app'.date('d_m_Y').'.log',
 		],
+		/**
+		 * Database settings
+		 */
 		'db' => [
 			'host' => 'localhost',
 			'user' => 'root',
 			'pass' => '',
 			'dbname' => 'e3erp',
 		],
+		/**
+		 * Application settings
+		 */
 		'appsets' => [
 			'tokenExpiry' => 8,
 			'tokenRefresh' => 7,

@@ -37,10 +37,17 @@ return [
 		 * Application settings
 		 */
 		'appsets' => [
-			'tokenExpiry' => 8,
-			'tokenRefresh' => 7,
-			'otpNumOnly' => true,
-			'otpNumChar' => 6,
+			'tokenExpiry' 	=> 8,
+			'tokenRefresh' 	=> 7,
+			'otpNumOnly' 	=> true,
+			'otpNumChar' 	=> 6,
+			'otpValidMin'	=> 10,
+			'smsUrl'		=> 'http://sms.itwebservices.in/API/WebSMS/Http/v1.0a/index.php?reqid=1',
+			'smsUser'		=> 'EANDG',
+			'smsPass'		=> 'ashwinidhuppe',
+			'smsRoute'		=> 2,
+			'smsSendId'		=> 'E3',
+			'smsCallBack'	=> ''
 		],
 	],
 ];

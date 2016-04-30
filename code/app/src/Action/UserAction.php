@@ -204,11 +204,20 @@ class UserAction extends \App\BaseController
 					$otp = $this->randomString($this->settings['appsets']['otpNumOnly'], $this->settings['appsets']['otpNumChar']);
 					/*$updateStmt = $this->dbConn->update(array('password' => $otp))->table('user')->where('id', '=', $dataFetched[0]['id']);
 					$affectRow = $updateStmt->execute();*/
-					$stmt = $this->dbConn->insert(array('username', 'otp', 'created_datetime', 'expire_on', 'active'))->into('forgot_password_otp')->values(array($data['username'], $otp, date('Y-m-d H:i:s'), date('Y-m-d H:i:s', strtotime(date('Y-m-d H:i:s')) +60*60), 'Y'));
+					$stmt = $this->dbConn->insert(array('username', 'otp', 'created_datetime', 'expire_on', 'active'))->into('forgot_password_otp')->values(array($data['username'], $otp, date('Y-m-d H:i:s'), date('Y-m-d H:i:s',strtotime(date('Y-m-d H:i:s')) +10*60), 'Y'));
 					$insId = $stmt->execute();
 					if ($insId > 1)
 					{
-						return array("code" => 200, "data" => array('code' => 'success', 'message' => $otp));
+						try
+						{
+							//
+						}
+						catch (\Exception $e)
+						{
+							throw new \Exception("Unable to send SMS", 1);
+
+						}
+						return array("code" => 200, "data" => array('code' => 'success', 'message' => 'OTP Sent to user'));
 					}
 				}
 				else

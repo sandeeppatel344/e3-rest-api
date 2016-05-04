@@ -89,7 +89,7 @@ class BatchAction extends \App\BaseController
 	{
 		try
 		{
-			$stmt = $this->dbConn->select(array('session.id as id', 'session.name as name', 'session.date as date', 'session.start_time as start_time', 'session.end_time as end_time', 'session.venue as venue', 'session.isactive as is_active', 'IFNULL((select is_present from session_attendance where batch_user_id = batch_user.id and session_attendance.session_id = session.id), "N") as is_attended'))->distinct()->from('session')->join('batch', 'session.batch_id', '=', 'batch.id')->join('batch_user', 'batch_user.batch_id', '=', 'batch.id')->whereMany(array('batch.id' => $data, 'batch_user.user_id' => $this->userId), '=')->orderBy('session.date', 'ASC')->orderBy('session.start_time', 'ASC');
+			$stmt = $this->dbConn->select(array('session.id as id', 'session.name as name', 'session.date as date', 'session.start_time as start_time', 'session.end_time as end_time', 'session.venue as venue', 'session.isactive as is_active', 'IFNULL((select is_present from session_attendance where batch_user_id = batch_user.id and session_attendance.session_id = session.id), "N") as is_attended'))->distinct()->from('session')->join('batch', 'session.batch_id', '=', 'batch.id')->join('batch_user', 'batch_user.batch_id', '=', 'batch.id')->whereMany(array('batch.id' => $data, 'batch_user.user_id' => $this->userId, 'batch.is_delete' => 'N'), '=')->orderBy('session.date', 'ASC')->orderBy('session.start_time', 'ASC');
 			$stmtExec = $stmt->execute();
 			$dataFetched = $stmtExec->fetchAll();
 			if (sizeof($dataFetched) > 0)
@@ -122,7 +122,6 @@ class BatchAction extends \App\BaseController
 	{
 		try
 		{
-			$stmt = $this->dbConn->select(array('batch_groups.name', 'meeting.title', 'meeting.agenda', 'meeting.venue', 'meeting.batch_groups_id', 'meeting.conference_number', 'meeting.conference_other_details', 'meeting.date', 'meeting.start_time', 'meeting.end_time'))->from('meeting')->join('batch_groups', 'meeting.batch_groups_id', '=', 'e3erp.batch_groups.id')->where('meeting.batch_id', '=', $data)->orderBy('meeting.date', 'ASC')->orderBy('meeting.start_time', 'ASC');
 			$stmtExec = $stmt->execute();
 			$dataFetched = $stmtExec->fetchAll();
 			if (sizeof($dataFetched) > 0)
@@ -155,10 +154,10 @@ class BatchAction extends \App\BaseController
 	{
 		try
 		{
-			$st=$this->dbConn->select(array("batch_groups_id"))->from('batch_user')->where('user_id', '=', $this->userId)->execute()->fetch();
+			$st=$this->dbConn->select(array("batch_groups_id"))->from('batch_user')->whereMany(array('user_id' => $this->userId, 'is_delete' => 'N'), '=')->execute()->fetch();
 			$st['batch_groups_id'] = (!is_null($st['batch_groups_id'])) ? $st['batch_groups_id'] : "" ;
 
-			$st2=$this->dbConn->select(array('user_id'))->from('batch_user')->where('batch_groups_id', '=', $st['batch_groups_id'])->execute()->fetchAll();
+			$st2=$this->dbConn->select(array('user_id'))->from('batch_user')->whereMany(array('batch_groups_id' => $st['batch_groups_id'], 'is_delete' => 'N'), '=')->execute()->fetchAll();
 			$gUser = array();
 
 			for ($i=0; $i < sizeof($st2);$i++)

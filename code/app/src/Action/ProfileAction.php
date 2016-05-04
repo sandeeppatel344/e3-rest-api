@@ -91,7 +91,7 @@ class ProfileAction extends \App\BaseController
 	private function get()
 	{
 		$data=array();
-		$stmt=$this->dbConn->select(array('person.*', 'user.username'))->from('person')->join('user', 'person.user_id', '=', 'user.id')->where('user.id', '=', $this->userId);
+		$stmt=$this->dbConn->select(array('person.*', 'user.username'))->from('person')->join('user', 'person.user_id', '=', 'user.id')->whereMany(array('user.id' => $this->userId, 'user.is_delete' => 'N'), '=');
 		$stmtExec = $stmt->execute();
 		$stmtFetched = $stmtExec->fetch();
 		$stmtFetched['address'] = $this->dbConn->select()->from('user_address_details')->where('user_id', '=', $this->userId)->execute()->fetch();

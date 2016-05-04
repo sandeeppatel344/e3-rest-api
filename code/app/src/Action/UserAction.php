@@ -116,7 +116,7 @@ class UserAction extends \App\BaseController
 		try
 		{
 			$this->logger->info("Testing");
-			$stmt = $this->dbConn->select(array('id','isactive'))->from('user')->where('username', '=', $data['login'])->where('password', '=', $data['password']);
+			$stmt = $this->dbConn->select(array('id','isactive'))->from('user')->where('username', '=', $data['login'])->whereMany(array('password' => $data['password'], 'is_delete' => 'N'), '=');
 			$stmtExec = $stmt->execute();
 			$dataFetched = $stmtExec->fetch();
 
@@ -196,26 +196,24 @@ class UserAction extends \App\BaseController
 		{
 			if (isset($data['username']))
 			{
-				$stmt = $this->dbConn->select()->from('user')->where('username', '=', $data['username']);
+				$stmt = $this->dbConn->select(array('user.id', 'person.mobile'))->from('user')->join('person', 'person.user_id', '=', 'user.id')->whereMany(array('user.username' => $data['username'], 'user.is_delete' => 'N'), '=');
 				$stmtExec = $stmt->execute();
 				$dataFetched = $stmtExec->fetchAll();
+
 				if (sizeof($dataFetched) == 1)
 				{
 					$otp = $this->randomString($this->settings['appsets']['otpNumOnly'], $this->settings['appsets']['otpNumChar']);
-					/*$updateStmt = $this->dbConn->update(array('password' => $otp))->table('user')->where('id', '=', $dataFetched[0]['id']);
-					$affectRow = $updateStmt->execute();*/
-					$stmt = $this->dbConn->insert(array('username', 'otp', 'created_datetime', 'expire_on', 'active'))->into('forgot_password_otp')->values(array($data['username'], $otp, date('Y-m-d H:i:s'), date('Y-m-d H:i:s',strtotime(date('Y-m-d H:i:s')) +$this->settings['appsets']['otpValidMin']*60), 'Y'));
+					$stmt = $this->dbConn->insert(array('username', 'otp', 'created_datetime', 'expire_on', 'active'))->into('forgot_password_otp')->values(array($data['username'], $otp, date('Y-m-d H:i:s'), date('Y-m-d H:i:s', strtotime(date('Y-m-d H:i:s')) +$this->settings['appsets']['otpValidMin']*60), 'Y'));
 					$insId = $stmt->execute();
 					if ($insId > 1)
 					{
 						try
 						{
-							//
+							$this->sendotp($this->settings['appsets'], array('otp' => $otp, 'recipient' => '0'.$dataFetched[0]['mobile']));
 						}
 						catch (\Exception $e)
 						{
-							throw new \Exception("Unable to send SMS", 1);
-
+							throw new \Exception("Unable to send SMS ".$e->getMessage(), 1);
 						}
 						return array("code" => 200, "data" => array('code' => 'success', 'message' => 'OTP Sent to user'));
 					}
@@ -330,8 +328,7 @@ class UserAction extends \App\BaseController
 	{
 		try
 		{
-			$courseStmt = $this->dbConn->select(array('batch.center_course_id AS course_id', 'batch.name AS batch_name', 'batch.status AS batch_status',
-				'batch.start_date AS batch_start_date', 'batch.end_date AS batch_end_date', 'course.name AS course_name', 'batch_user.batch_id AS batch_id', 'batch_user.user_id AS user_id', 'center_course.id AS center_id', 'center.name AS center_name'))->from('batch_user')->join('batch', 'batch_user.batch_id', '=', 'batch.id')->join('center_course', 'batch.center_course_id', '=', 'center_course.id')->join('center', 'center_course.center_id', '=', 'center.id')->join('course', 'center_course.course_id', '=', 'course.id')->where('batch_user.user_id', '=', $this->userId);
+			$courseStmt = $this->dbConn->select(array('batch.center_course_id AS course_id', 'batch.name AS batch_name', 'batch.status AS batch_status', 'batch.start_date AS batch_start_date', 'batch.end_date AS batch_end_date', 'course.name AS course_name', 'batch_user.batch_id AS batch_id', 'batch_user.user_id AS user_id', 'center_course.id AS center_id', 'center.name AS center_name'))->from('batch_user')->join('batch', 'batch_user.batch_id', '=', 'batch.id')->join('center_course', 'batch.center_course_id', '=', 'center_course.id')->join('center', 'center_course.center_id', '=', 'center.id')->join('course', 'center_course.course_id', '=', 'course.id')->whereMany(array('batch_user.user_id' => $this->userId, 'course.is_delete' => 'N'), '=');
 			$courseStmtExec = $courseStmt->execute();
 			$courseData = $courseStmtExec->fetchAll();
 			if (sizeof($courseData) > 0)

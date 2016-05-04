@@ -10,6 +10,66 @@ namespace App;
 class BaseController
 {
 	/**
+	 *
+	 */
+	public function sendotp($conf, $data)
+	{
+		date_default_timezone_set('Asia/Kolkata');
+		$message = $data['otp']." is your verification code to reset your password. Otp is valid only for 10 mins.";
+		$recipient = isset($data['recipient']) ? $data['recipient'] : '09820547560';
+		$callBack = isset($conf['smsCallBack']) ? $conf['smsCallBack'] : "";
+
+		$url = $conf['smsUrl']."&username=".$conf['smsUser']."&password=".$conf['smsPass']."&sender=".$conf['smsSendId']."&route=".$conf['smsRoute']."&message=".str_replace(" ", "+", $message)."&to=".$recipient."&sendondate=".date('d-m-Y\TH:i:s')."&callback=".$callBack;
+		/*echo $url;
+		exit;*/
+		try
+		{
+			$data = $this->callurl($url);
+		}
+		catch (\Exception $e)
+		{
+			// $data = array("error", $e->getMessage());
+			throw new \Exception($e->getMessage());
+		}
+		return $data;
+	}
+
+	protected function isJson($string)
+	{
+		return is_string($string) && is_array(json_decode($string, true)) && (json_last_error() == JSON_ERROR_NONE) ? true : false;
+	}
+
+	protected function callurl($url)
+	{
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_HEADER, 0);            // No header in the result
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Return, do not echo result
+
+		// Fetch and return content, save it.
+		$raw_data = curl_exec($ch);
+		if (curl_errno($ch))
+		{
+			curl_close($ch);
+
+			throw new \Exception(curl_error($ch));
+		}
+		else
+		{
+			curl_close($ch);
+			if ($this->isJson($raw_data))
+			{
+				$data = json_decode($raw_data);
+				return $data;
+			}
+			else
+			{
+				throw new \Exception(trim($raw_data));
+			}
+		}
+	}
+
+	/**
 	 * Generate Token protected function
 	 * @param integer $userId to store token against in DB
 	 * @param class $db to connect to database

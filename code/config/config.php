@@ -42,10 +42,10 @@ return [
 			'otpNumOnly' 	=> true,
 			'otpNumChar' 	=> 6,
 			'otpValidMin'	=> 10,
-			'smsUrl'		=> 'http://sms.itwebservices.in/API/WebSMS/Http/v1.0a/index.php?reqid=1',
+			'smsUrl'		=> 'http://sms.itwebservices.in/API/WebSMS/Http/v1.0a/index.php?reqid=1&format=json&unique=0',
 			'smsUser'		=> 'EANDG',
 			'smsPass'		=> 'ashwinidhuppe',
-			'smsRoute'		=> 2,
+			'smsRoute'		=> 1,
 			'smsSendId'		=> 'E3',
 			'smsCallBack'	=> ''
 		],

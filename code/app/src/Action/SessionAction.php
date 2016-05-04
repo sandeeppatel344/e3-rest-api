@@ -87,7 +87,7 @@ class SessionAction extends \App\BaseController
 		{
 			try
 			{
-				$stmt = $this->dbConn->select(array('e3erp.session_assignment.name as assignment_name', 'e3erp.user_assignment_status.assignment_status_id', 'e3erp.session_assignment.id as assignment_id', 'e3erp.user_assignment_status.user_comment', 'e3erp.user_assignment_status.approver_comment', '(select Concat(e3erp.person.first_name, " ", e3erp.person.last_name) from e3erp.person where e3erp.person.user_id=e3erp.user_assignment_status.approved_by_user_id) as approved_by'))->distinct()->from('session_assignment')->join('user_assignment_status', 'user_assignment_status.assignment_id', '=', 'session_assignment.id', 'LEFT OUTER')->join('session', 'session.id', '=', 'session_assignment.session_id')->join('batch', 'batch.id', '=', 'session.batch_id')->join('batch_user', 'batch_user.batch_id', '=', 'batch.id')->where('session_assignment.session_id', '=', $data)->where('batch_user.user_id', '=', $this->userId);
+				$stmt = $this->dbConn->select(array('e3erp.session_assignment.name as assignment_name', 'e3erp.user_assignment_status.assignment_status_id', 'e3erp.session_assignment.id as assignment_id', 'e3erp.user_assignment_status.user_comment', 'e3erp.user_assignment_status.approver_comment', '(select Concat(e3erp.person.first_name, " ", e3erp.person.last_name) from e3erp.person where e3erp.person.user_id=e3erp.user_assignment_status.approved_by_user_id) as approved_by'))->distinct()->from('session_assignment')->join('user_assignment_status', 'user_assignment_status.assignment_id', '=', 'session_assignment.id', 'LEFT OUTER')->join('session', 'session.id', '=', 'session_assignment.session_id')->join('batch', 'batch.id', '=', 'session.batch_id')->join('batch_user', 'batch_user.batch_id', '=', 'batch.id')->whereMany(array('session_assignment.session_id' => $data, 'batch_user.user_id' => $this->userId, 'session_assignment.is_delete' => 'N'), '=');
 				$stmtExec = $stmt->execute();
 				$dataFetched = $stmtExec->fetchAll();
 				if (sizeof($dataFetched) > 0)
@@ -123,7 +123,7 @@ class SessionAction extends \App\BaseController
 		{
 			try
 			{
-				$stmt = $this->dbConn->select(array('url', 'type'))->from('session_media')->where('session_id', '=', $data);
+				$stmt = $this->dbConn->select(array('url', 'type'))->from('session_media')->whereMany(array('session_id' => $data, 'is_delete' => 'N'), '=');
 				$stmtExec = $stmt->execute();
 				$dataFetched = $stmtExec->fetchAll();
 				if (sizeof($dataFetched) > 0)
@@ -159,7 +159,7 @@ class SessionAction extends \App\BaseController
 		{
 			try
 			{
-				$stmt = $this->dbConn->select(array('name', 'description'))->from('session_distinction')->where('session_id', '=', $data);
+				$stmt = $this->dbConn->select(array('name', 'description'))->from('session_distinction')->whereMany(array('session_id' => $data, 'is_delete' => 'N'), '=');
 				$stmtExec = $stmt->execute();
 				$dataFetched = $stmtExec->fetchAll();
 				if (sizeof($dataFetched) > 0)

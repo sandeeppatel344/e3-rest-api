@@ -122,6 +122,7 @@ class BatchAction extends \App\BaseController
 	{
 		try
 		{
+			$stmt = $this->dbConn->select(array('batch_groups.name', 'meeting.title', 'meeting.agenda', 'meeting.venue', 'meeting.batch_groups_id', 'meeting.conference_number', 'meeting.conference_other_details', 'meeting.date', 'meeting.start_time', 'meeting.end_time'))->from('meeting')->join('batch_groups', 'meeting.batch_groups_id', '=', 'e3erp.batch_groups.id')->join('batch_user', 'batch_user.batch_groups_id', '=', 'batch_groups.id')->whereMany(array('meeting.batch_id' => $data, 'meeting.is_delete' => 'N', 'batch_user.user_id' => $this->userId), '=')->orderBy('meeting.date', 'ASC')->orderBy('meeting.start_time', 'ASC');
 			$stmtExec = $stmt->execute();
 			$dataFetched = $stmtExec->fetchAll();
 			if (sizeof($dataFetched) > 0)

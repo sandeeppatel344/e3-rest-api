@@ -45,8 +45,8 @@ return [
 			'smsUrl'		=> 'http://sms.itwebservices.in/API/WebSMS/Http/v1.0a/index.php?reqid=1&format=json&unique=0',
 			'smsUser'		=> 'EANDG',
 			'smsPass'		=> 'ashwinidhuppe',
-			'smsRoute'		=> 1,
-			'smsSendId'		=> 'E3',
+			'smsRoute'		=> 2,
+			'smsSendId'		=> '8039',
 			'smsCallBack'	=> ''
 		],
 	],
